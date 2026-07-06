@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  
+  taskflow-db:
+    image: postgres:16-alpine
+    container_name: taskflow_postgres_container
+    environment:
+      POSTGRES_USER: mfatih17
+      POSTGRES_PASSWORD: Klavye123!
+      POSTGRES_DB: taskflow_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  
+  taskflow-pgadmin:
+    image: dpage/pgadmin4
+    container_name: taskflow_pgadmin_container
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@taskflow.com
+      PGADMIN_DEFAULT_PASSWORD: Klavye123!
+    ports:
+      - "5050:80"
+    depends_on:
+      - taskflow-db
+
+
+volumes:
+  postgres_data:
