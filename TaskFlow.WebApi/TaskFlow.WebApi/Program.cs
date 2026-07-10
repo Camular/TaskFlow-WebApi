@@ -13,6 +13,8 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder
 
 var app = builder.Build();
 
+app.UseMiddleware<TaskFlow.WebApi.Infrastructure.Middleware.ExceptionMiddleware>();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -20,6 +22,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 
