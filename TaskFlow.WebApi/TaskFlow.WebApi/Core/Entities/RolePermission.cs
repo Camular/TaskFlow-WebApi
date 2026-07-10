@@ -5,5 +5,7 @@
         public Guid Id { get; set; }
         public Guid RoleId { get; set; }
         public Guid PermissionId { get; set; }
+        public required WorkspaceRole Role { get; set; }
+        public required Permission Permission { get; set; }
     }
 }

@@ -8,7 +8,7 @@
         public TaskStatus Status { get; set; } = TaskStatus.ToDo;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? Deadline { get; set; }
-        public Guid? WorkspaceId { get; set; }
+        public Guid WorkspaceId { get; set; }
         public Guid? AssignedUserId { get; set; }
         public required Workspace Workspace { get; set; }
         public User? AssignedUser { get; set; }
