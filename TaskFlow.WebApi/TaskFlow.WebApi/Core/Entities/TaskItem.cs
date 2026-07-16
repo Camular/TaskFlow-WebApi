@@ -12,6 +12,6 @@
         public Guid? AssignedUserId { get; set; }
         public required Workspace Workspace { get; set; }
         public User? AssignedUser { get; set; }
-
+        
     }
 }
