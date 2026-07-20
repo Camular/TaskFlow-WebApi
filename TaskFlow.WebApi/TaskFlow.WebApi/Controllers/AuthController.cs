@@ -1,0 +1,78 @@
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using TaskFlow.WebApi.Core.DTOs.Auth;
+using TaskFlow.WebApi.Core.Interfaces;
+namespace TaskFlow.WebApi.Controllers
+{
+    [ApiController]
+
+    [Route("api/[controller]")]
+
+    public class AuthController : ControllerBase
+    {
+        private readonly IAuthService _authService;
+
+        public AuthController(IAuthService authService)
+        {
+            _authService = authService;
+        }
+
+        [HttpPost("register")]
+
+        public async Task<IActionResult> RegisterAsync([FromBody] RegisterRequest request)
+        {
+            try
+            {
+                var response = await _authService.RegisterAsync(request);
+                return Ok(response);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { Message = ex.Message });
+            }
+        }
+
+        [HttpPost("login")]
+
+        public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request)
+        {
+            try
+            {
+                var response = await _authService.LoginAsync(request);
+                return Ok(response);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { Message = ex.Message });
+            }
+        }
+
+        [Authorize]
+
+        [HttpGet("me")]
+
+        public IActionResult GetCurrentUser()
+        {
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userIdStr))
+            {
+                return Unauthorized(new { Message = "User ID claim not found." });
+            }
+
+            var userId = Guid.Parse(userIdStr);
+
+            var username = User.FindFirst(ClaimTypes.Name)?.Value;
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            return Ok(new
+            {
+                UserId = userId,
+                Username = username,
+                Email = email
+            });
+        }
+
+    }
+}
