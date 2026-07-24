@@ -3,8 +3,10 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using TaskFlow.WebApi.Core.Authorization;
 using TaskFlow.WebApi.Core.DTOs.Auth;
 using TaskFlow.WebApi.Core.Entities;
+using TaskFlow.WebApi.Core.Exceptions;
 using TaskFlow.WebApi.Core.Interfaces;
 using TaskFlow.WebApi.Infrastructure.Data;
 
@@ -44,30 +46,64 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             string hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
-            var user = new User
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
             {
-                Id = Guid.NewGuid(),
-                Username = trimmedUsername,  
-                Email = normalizedEmail,     
-                PasswordHash = hashedPassword,
-                CreatedDate = DateTime.UtcNow
-            };
+                var user = new User
+                {
+                    Id = Guid.NewGuid(),
+                    Username = trimmedUsername,
+                    Email = normalizedEmail,
+                    PasswordHash = hashedPassword,
+                    CreatedDate = DateTime.UtcNow
+                };
 
-            await _context.Users.AddAsync(user);
-            await _context.SaveChangesAsync();
+                var defaultWorkspace = new Workspace
+                {
+                    Id = Guid.NewGuid(),
+                    SpaceName = $"{trimmedUsername}'s Workspace",
+                    SpaceDescription = "Default personal workspace",
+                    CreatedAt = DateTime.UtcNow,
+                    IsPersonal = true 
+                };
 
-            var expireMinutes = Convert.ToDouble(_configuration["Jwt:ExpireMinutes"] ?? "10080");
-            var expireAt = DateTime.UtcNow.AddMinutes(expireMinutes);
-            var token = GenerateJwtToken(user, expireAt);
+                var userWorkspaceRole = new UserWorkspaceRole
+                {
+                    UserId = user.Id,
+                    WorkspaceId = defaultWorkspace.Id,
+                    RoleId = SystemRoles.OwnerId,
+                    User = user,
+                    Workspace = defaultWorkspace,
+                    Role = null!
+                };
 
-            return new AuthResponse
+                await _context.Users.AddAsync(user);
+                await _context.Workspaces.AddAsync(defaultWorkspace);
+                await _context.UserWorkspaceRoles.AddAsync(userWorkspaceRole);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                var expireMinutes = Convert.ToDouble(_configuration["Jwt:ExpireMinutes"] ?? "10080");
+                var expireAt = DateTime.UtcNow.AddMinutes(expireMinutes);
+                var token = GenerateJwtToken(user, expireAt);
+
+                return new AuthResponse
+                {
+                    UserId = user.Id,
+                    UserName = user.Username,
+                    Email = user.Email,
+                    Token = token,
+                    ExpireAt = expireAt
+                };
+            }
+
+            catch
             {
-                UserId = user.Id,
-                UserName = user.Username,
-                Email = user.Email,
-                Token = token,
-                ExpireAt = expireAt
-            };
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<AuthResponse> LoginAsync(LoginRequest request)
@@ -78,7 +114,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             {
-                throw new UnauthorizedAccessException("Invalid email or password.");
+                throw new UnauthorizedException("Invalid email or password.");
             }
 
             var expireMinutes = Convert.ToDouble(_configuration["Jwt:ExpireMinutes"] ?? "10080");
