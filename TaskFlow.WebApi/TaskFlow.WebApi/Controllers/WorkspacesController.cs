@@ -70,6 +70,7 @@ namespace TaskFlow.WebApi.Controllers
         }
 
         [HttpGet("{id}")]
+        [ActionName(nameof(GetWorkspaceByIdAsync))]
         public async Task<IActionResult> GetWorkspaceByIdAsync([FromRoute] Guid id)
         {
             var userId = GetCurrentUserId();

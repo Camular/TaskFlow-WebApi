@@ -26,14 +26,15 @@ namespace TaskFlow.WebApi.Infrastructure.Services
         public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
         {
             var normalizedEmail = request.Email.Trim().ToLowerInvariant();
-            var trimmedUsername = request.Username.Trim(); 
+            var trimmedUsername = request.Username.Trim();
+            var normalizedUsername = trimmedUsername.ToLowerInvariant();
 
             bool isUsernameExists = await _context.Users
-                .AnyAsync(u => u.Username.ToLower() == trimmedUsername.ToLower());
+                .AnyAsync(u => u.Username.ToLower() == normalizedUsername);
 
             if (isUsernameExists)
             {
-                throw new InvalidOperationException("Username already exists.");
+                throw new ConflictException("Username already exists.");
             }
 
             bool isEmailExists = await _context.Users
@@ -41,7 +42,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             if (isEmailExists)
             {
-                throw new InvalidOperationException("Email already exists.");
+                throw new ConflictException("Email already exists.");
             }
 
             string hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
@@ -65,7 +66,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
                     SpaceName = $"{trimmedUsername}'s Workspace",
                     SpaceDescription = "Default personal workspace",
                     CreatedAt = DateTime.UtcNow,
-                    IsPersonal = true 
+                    IsPersonal = true
                 };
 
                 var userWorkspaceRole = new UserWorkspaceRole
@@ -98,7 +99,6 @@ namespace TaskFlow.WebApi.Infrastructure.Services
                     ExpireAt = expireAt
                 };
             }
-
             catch
             {
                 await transaction.RollbackAsync();

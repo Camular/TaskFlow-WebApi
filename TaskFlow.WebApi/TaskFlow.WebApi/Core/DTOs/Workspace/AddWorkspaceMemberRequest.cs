@@ -6,9 +6,9 @@ namespace TaskFlow.WebApi.Core.DTOs.Workspace
     {
         [Required(ErrorMessage = "E-posta adresi zorunludur.")]
         [EmailAddress(ErrorMessage = "Geçerli bir e-posta adresi giriniz.")]
-        public string Email { get; set; } = string.Empty;
+        public required string Email { get; set; }
 
         [Required(ErrorMessage = "Rol seçimi zorunludur.")]
-        public Guid RoleId { get; set; }
+        public required Guid RoleId { get; set; }
     }
 }

@@ -58,12 +58,20 @@ namespace TaskFlow.WebApi.Infrastructure.Services
                 .ToListAsync();
         }
 
-        public async Task<WorkspaceSummaryDto> CreateWorkspaceAsync(Guid UserId, CreateWorkspaceRequest request)
+        public async Task<WorkspaceSummaryDto> CreateWorkspaceAsync(Guid userId, CreateWorkspaceRequest request)
         {
             await using var transaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
+                bool isNameExists = await _context.UserWorkspaceRoles
+                    .AnyAsync(uwr => uwr.UserId == userId && uwr.Workspace.SpaceName.ToLower() == request.SpaceName.ToLower());
+
+                if (isNameExists)
+                {
+                    throw new InvalidOperationException($"'{request.SpaceName}' adında bir çalışma alanınız zaten mevcut.");
+                }
+
                 var workspace = new Workspace
                 {
                     Id = Guid.NewGuid(),
@@ -75,7 +83,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
                 var userWorkspaceRole = new UserWorkspaceRole
                 {
-                    UserId = UserId,
+                    UserId = userId,
                     WorkspaceId = workspace.Id,
                     RoleId = SystemRoles.OwnerId,
                     Role = null!,
@@ -105,7 +113,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             }
         }
 
-        public async Task<WorkspaceSummaryDto?> UpdateWorkspaceAsync(Guid userId, Guid workspaceId, UpdateWorkspaceRequest request)
+        public async Task<WorkspaceSummaryDto> UpdateWorkspaceAsync(Guid userId, Guid workspaceId, UpdateWorkspaceRequest request)
         {
             var userWorkspaceRole = await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Workspace.Update);
 
@@ -139,7 +147,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             return true;
         }
 
-        public async Task<WorkspaceSummaryDto?> GetWorkspaceByIdAsync(Guid userId, Guid workspaceId)
+        public async Task<WorkspaceSummaryDto> GetWorkspaceByIdAsync(Guid userId, Guid workspaceId)
         {
             var userWorkspaceRole = await _context.UserWorkspaceRoles
                 .Include(uwr => uwr.Workspace)
@@ -161,14 +169,14 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             };
         }
 
-        public async Task<List<WorkspaceMemberDto>?> GetWorkspaceMembersAsync(Guid userId, Guid workspaceId)
+        public async Task<List<WorkspaceMemberDto>> GetWorkspaceMembersAsync(Guid userId, Guid workspaceId)
         {
             var isMember = await _context.UserWorkspaceRoles
                 .AnyAsync(uwr => uwr.UserId == userId && uwr.WorkspaceId == workspaceId);
 
             if (!isMember)
             {
-                throw new InvalidOperationException("Bu çalışma alanının üyelerini görüntülemek için çalışma alanına üye olmalısınız.");
+                throw new ForbiddenException("Bu çalışma alanının üyelerini görüntülemek için çalışma alanına üye olmalısınız.");
             }
 
             return await _context.UserWorkspaceRoles
@@ -184,7 +192,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
                 .ToListAsync();
         }
 
-        public async Task<WorkspaceMemberDto?> AddWorkspaceMemberAsync(Guid requesterUserId, Guid workspaceId, AddWorkspaceMemberRequest request)
+        public async Task<WorkspaceMemberDto> AddWorkspaceMemberAsync(Guid requesterUserId, Guid workspaceId, AddWorkspaceMemberRequest request)
         {
             await CheckAndGetWorkspaceRoleAsync(requesterUserId, workspaceId, SystemPermissions.Workspace.MemberAdd);
 
@@ -234,7 +242,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             };
         }
 
-        public async Task<WorkspaceMemberDto?> UpdateMemberRoleAsync(Guid requesterUserId, Guid workspaceId, Guid targetUserId, UpdateMemberRoleRequest request)
+        public async Task<WorkspaceMemberDto> UpdateMemberRoleAsync(Guid requesterUserId, Guid workspaceId, Guid targetUserId, UpdateMemberRoleRequest request)
         {
             await CheckAndGetWorkspaceRoleAsync(requesterUserId, workspaceId, SystemPermissions.Workspace.RoleAssign);
 
