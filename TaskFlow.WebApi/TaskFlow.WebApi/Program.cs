@@ -20,6 +20,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
 
+builder.Services.AddScoped<ITaskItemService, TaskItemService>();
+
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 
 var secretKey = jwtSettings["SecretKey"]
