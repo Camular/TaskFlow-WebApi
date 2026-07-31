@@ -63,6 +63,18 @@ namespace TaskFlow.WebApi.Controllers
             return Ok(task);
         }
 
+        [HttpGet("{workspaceId}/tasks/{taskId}/detail")]
+
+        public async Task<IActionResult> GetTaskDetailAsync([FromRoute] Guid workspaceId, [FromRoute] Guid taskId)
+        {
+            var userId = GetCurrentUserId();
+
+            var detailedTask = await _taskItemService.GetTaskDetailAsync(userId, workspaceId, taskId);
+
+            return Ok(detailedTask);
+        }
+
+
         [HttpPost("{workspaceId}/tasks")]
 
         public async Task<IActionResult> CreateTaskAsync([FromRoute] Guid workspaceId, [FromBody] CreateTaskRequest request)
@@ -128,5 +140,17 @@ namespace TaskFlow.WebApi.Controllers
 
             return Ok(updatedTask);
         }
+
+        [HttpPatch("{workspaceId}/tasks/{taskId}/unassign")]
+
+        public async Task<IActionResult> UnassignFromTaskAsync([FromRoute] Guid workspaceId, [FromRoute] Guid taskId)
+        {
+            var userId = GetCurrentUserId();
+
+            var unassignedTask = await _taskItemService.UnassignFromTaskAsync(userId, workspaceId, taskId);
+
+            return Ok(unassignedTask);
+        }
+
     }
 }

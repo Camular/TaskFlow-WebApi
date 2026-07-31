@@ -32,6 +32,18 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             AssignedUserId = t.AssignedUserId,
             WorkspaceId = t.WorkspaceId
         };
+
+        private static readonly Expression<Func<TaskItem, TaskDetailDto>> AsTaskDetailDto = t => new TaskDetailDto
+        {
+            Id = t.Id,
+            Title = t.Title,
+            Description = t.Description,
+            Status = t.Status,
+            CreatedAt = t.CreatedAt,
+            Deadline = t.Deadline,
+            AssignedUserId = t.AssignedUserId,
+            WorkspaceId = t.WorkspaceId
+        };
         private static TaskSummaryDto MapToTaskSummaryDto(TaskItem task) => new()
         {
             Id = task.Id,
@@ -106,6 +118,42 @@ namespace TaskFlow.WebApi.Infrastructure.Services
                 .ToListAsync();
         }
 
+        public async Task<TaskDetailDto> GetTaskDetailAsync(Guid userId, Guid workspaceId, Guid taskId)
+        {
+            await CheckWorkspacePermissionAsync(userId, workspaceId, SystemPermissions.TaskItem.Read);
+
+            var taskSummary = await _context.TaskItems
+                .AsNoTracking()
+                .Where(t => t.WorkspaceId == workspaceId && t.Id == taskId)
+                .Select(AsTaskDetailDto)
+                .FirstOrDefaultAsync();
+
+            if (taskSummary == null)
+            {
+                throw new KeyNotFoundException("Görüntülemek istediğiniz Task bulunamadı ya da bulunduğunuz çalışma alanında bulunmamakta.");
+            }
+
+            return taskSummary;
+        }
+
+        public async Task<TaskSummaryDto> GetTaskByIdAsync(Guid userId, Guid workspaceId, Guid taskId)
+        {
+            await CheckWorkspacePermissionAsync(userId, workspaceId, SystemPermissions.TaskItem.Read);
+
+            var taskSummary = await _context.TaskItems
+                .AsNoTracking()
+                .Where(t => t.WorkspaceId == workspaceId && t.Id == taskId)
+                .Select(AsTaskSummaryDto)
+                .FirstOrDefaultAsync();
+
+            if (taskSummary == null)
+            {
+                throw new KeyNotFoundException("Görüntülemek istediğiniz Task bulunamadı ya da bulunduğunuz çalışma alanında bulunmamakta.");
+            }
+
+            return taskSummary;
+        }
+
         public async Task<TaskSummaryDto> CreateTaskAsync(Guid userId, Guid workspaceId, CreateTaskRequest request)
         {
             await CheckWorkspacePermissionAsync(userId, workspaceId, SystemPermissions.TaskItem.Create);
@@ -165,6 +213,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             var taskItem = await GetTaskInWorkspaceAsync(workspaceId, taskId);
 
             var normalizedEmail = request.Email.ToLowerInvariant();
+
             var targetUser = await _context.Users
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
@@ -184,6 +233,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             }
 
             taskItem.AssignedUserId = targetUser.Id;
+
             await _context.SaveChangesAsync();
 
             return MapToTaskSummaryDto(taskItem);
@@ -227,22 +277,19 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             return MapToTaskSummaryDto(taskItem);
         }
 
-        public async Task<TaskSummaryDto> GetTaskByIdAsync(Guid userId, Guid workspaceId, Guid taskId)
+        public async Task<TaskSummaryDto> UnassignFromTaskAsync(Guid userId, Guid workspaceId, Guid taskId)
         {
-            await CheckWorkspacePermissionAsync(userId, workspaceId, SystemPermissions.TaskItem.Read);
+            await CheckWorkspacePermissionAsync(userId, workspaceId, SystemPermissions.TaskItem.Assign);
 
-            var taskSummary = await _context.TaskItems
-                .AsNoTracking()
-                .Where(t => t.WorkspaceId == workspaceId && t.Id == taskId)
-                .Select(AsTaskSummaryDto)
-                .FirstOrDefaultAsync();
+            var taskItem = await GetTaskInWorkspaceAsync(workspaceId, taskId);
 
-            if (taskSummary == null)
-            {
-                throw new KeyNotFoundException("Görüntülemek istediğiniz Task bulunamadı ya da bulunduğunuz çalışma alanında bulunmamakta.");
-            }
+            taskItem.AssignedUserId = null;
 
-            return taskSummary;
+            await _context.SaveChangesAsync();
+
+            return MapToTaskSummaryDto(taskItem);
+
         }
+
     }
 }
