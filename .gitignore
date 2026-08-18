@@ -482,3 +482,9 @@ $RECYCLE.BIN/
 *.swp
 appsettings.Development.json
 .env
+
+# Öğrenme / Cursor — public repoda görünmesin (diskte kalır)
+.cursor/
+learning/
+PLAN.md
+LEARNING_ROADMAP.md
