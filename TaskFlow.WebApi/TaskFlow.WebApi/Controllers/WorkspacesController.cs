@@ -90,6 +90,27 @@ namespace TaskFlow.WebApi.Controllers
             return Ok(workspace);
         }
 
+        [HttpGet("{id}/roles")]
+        public async Task<IActionResult> GetWorkspaceRolesSummaryAsync([FromRoute] Guid id)
+        {
+            var userId = GetCurrentUserId();
+
+            var roles = await _workspaceService.GetWorkspaceRolesSummaryAsync(userId, id);
+
+            return Ok(roles);
+        }
+
+        [HttpGet("{id}/roles/{roleId}")]
+        [ActionName(nameof(GetWorkspaceRoleByIdSummaryAsync))]
+        public async Task<IActionResult> GetWorkspaceRoleByIdSummaryAsync([FromRoute] Guid id, [FromRoute] Guid roleId)
+        {
+            var userId = GetCurrentUserId();
+
+            var role = await _workspaceService.GetWorkspaceRoleByIdSummaryAsync(userId, id, roleId);
+
+            return Ok(role);
+        }
+
         [HttpPost("{id}/members")]
         public async Task<IActionResult> AddWorkspaceMemberAsync([FromRoute] Guid id, [FromBody] AddWorkspaceMemberRequest request)
         {
@@ -121,6 +142,17 @@ namespace TaskFlow.WebApi.Controllers
             await _workspaceService.RemoveWorkspaceMemberAsync(userId, id, memberId);
 
             return NoContent();
+        }
+
+        [HttpPost("{id}/roles")]
+        public async Task<IActionResult> CreateWorkspaceRoleAsync([FromRoute] Guid id, [FromBody] CreateWorkspaceRoleRequest request)
+        {
+            var userId = GetCurrentUserId();
+
+            var role = await _workspaceService.CreateWorkspaceRoleAsync(userId, id, request);
+
+            return CreatedAtAction(nameof(GetWorkspaceRoleByIdSummaryAsync), new { id , roleId = role.RoleId }, role);
+
         }
     }
 }

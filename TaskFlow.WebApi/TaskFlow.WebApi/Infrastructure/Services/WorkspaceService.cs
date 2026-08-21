@@ -192,6 +192,77 @@ namespace TaskFlow.WebApi.Infrastructure.Services
                 .ToListAsync();
         }
 
+        public async Task<List<RoleSummaryDto>> GetWorkspaceRolesSummaryAsync(Guid userId, Guid workspaceId)
+        {
+            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Workspace.View);
+
+            return await _context.WorkspaceRoles
+                .Where(wr => wr.WorkspaceId == workspaceId || wr.WorkspaceId == null)
+                .Select(wr => new RoleSummaryDto
+                {
+                    RoleId = wr.Id,
+                    WorkspaceId = wr.WorkspaceId,
+                    Name = wr.Name,
+                    Permissions = wr.RolePermissions.Select(rp => new PermissionSummaryDto
+                    {
+
+                        PermissionId = rp.PermissionId,
+                        Code = rp.Permission.Code ?? ""
+                    }).ToList(),
+
+                    AssignedUsers = wr.UserWorkspaceRoles
+                    .Where(uwr => uwr.WorkspaceId == workspaceId)
+                    .Select(uwr => new AssignedUsersSummaryDto
+                    {
+                        Id = uwr.UserId,
+                        Email = uwr.User.Email
+                    })
+                    .ToList(),
+
+                }).ToListAsync();
+            
+        }
+        
+        
+        public async Task<RoleSummaryDto> GetWorkspaceRoleByIdSummaryAsync(Guid userId, Guid workspaceId, Guid roleId)
+        {
+
+            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Workspace.View);
+
+            var workspaceRole = await _context.WorkspaceRoles
+                .Where(wr => (wr.WorkspaceId == workspaceId || wr.WorkspaceId == null) && (wr.Id == roleId))
+                .Select(wr => new RoleSummaryDto
+                {
+                    RoleId = wr.Id,
+                    WorkspaceId = wr.WorkspaceId,
+                    Name = wr.Name,
+                    Permissions = wr.RolePermissions.Select(rp => new PermissionSummaryDto
+                    {
+
+                        PermissionId = rp.PermissionId,
+                        Code = rp.Permission.Code ?? ""
+                    }).ToList(),
+
+                    AssignedUsers = wr.UserWorkspaceRoles
+                    .Where(uwr => uwr.WorkspaceId == workspaceId)
+                    .Select(uwr => new AssignedUsersSummaryDto
+                    {
+                        Id = uwr.UserId,
+                        Email = uwr.User.Email
+                    })
+                    .ToList(),
+
+                }).FirstOrDefaultAsync();
+
+            if (workspaceRole == null)
+            {
+                throw new KeyNotFoundException("Bu Role Bulunduğunuz Workspace'e ait değildir.");
+            }
+
+            return workspaceRole;
+
+        }
+        
         public async Task<WorkspaceMemberDto> AddWorkspaceMemberAsync(Guid requesterUserId, Guid workspaceId, AddWorkspaceMemberRequest request)
         {
             await CheckAndGetWorkspaceRoleAsync(requesterUserId, workspaceId, SystemPermissions.Workspace.MemberAdd);
@@ -325,6 +396,80 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             await _context.SaveChangesAsync();
 
             return true;
+        }
+
+        public async Task<RoleSummaryDto> CreateWorkspaceRoleAsync(Guid userId, Guid workspaceId, CreateWorkspaceRoleRequest request)
+        {
+            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Workspace.RoleCreate);
+
+            var permissionCount = await _context.Permissions
+                .CountAsync(p => request.PermissionIds.Contains(p.Id));
+
+            var roleNameExists = await _context.WorkspaceRoles
+                .AnyAsync(r => (r.WorkspaceId == null && r.Name.ToLower() == request.Name.ToLower()) || (r.WorkspaceId == workspaceId && r.Name.ToLower() == request.Name.ToLower()));
+
+            var permissionIdDublicateCheck = request.PermissionIds.Distinct().Count() != request.PermissionIds.Count;
+
+            var containsRestrictedPermissions = request.PermissionIds.Contains(SystemPermissions.Workspace.DeleteId);
+
+            var permissionInfo = await _context.Permissions
+            .Where(p => request.PermissionIds.Contains(p.Id))
+            .ToListAsync();
+
+            if (permissionIdDublicateCheck)
+            {
+                throw new InvalidOperationException("Atanmak istenen izinler arasında tekrar eden izinler bulunuyor.");
+            }
+
+            if (roleNameExists)
+            {
+                throw new ConflictException($"'{request.Name}' adında bir rol zaten mevcut.");
+            }
+
+            if (permissionCount != request.PermissionIds.Count)
+            {
+                throw new InvalidOperationException("Atanmak istenen izinlerden bazıları geçersiz veya bulunamadı.");
+            }
+
+            if(containsRestrictedPermissions)
+            {
+                throw new InvalidOperationException("Atanmak istenen izinler arasında yasaklı izinler bulunuyor.");
+            }
+
+            var newRole = new WorkspaceRole
+            {
+                Id = Guid.NewGuid(),
+                WorkspaceId = workspaceId,
+                Name = request.Name,
+                RolePermissions = request.PermissionIds.Select(pid => new RolePermission
+                {
+                    PermissionId = pid
+                }).ToList(),
+                UserWorkspaceRoles = new List<UserWorkspaceRole>(),
+                Workspace = null!
+            };
+
+            await _context.WorkspaceRoles.AddAsync(newRole);
+            await _context.SaveChangesAsync();
+
+            return new RoleSummaryDto
+            {
+                RoleId = newRole.Id,
+                WorkspaceId = newRole.WorkspaceId,
+                Name = newRole.Name,
+                Permissions = newRole.RolePermissions.Select(rp =>
+                {
+                    var info = permissionInfo.FirstOrDefault(p => p.Id == rp.PermissionId);
+                    return new PermissionSummaryDto
+                    {
+
+                        PermissionId = rp.PermissionId,
+                        Code = info?.Code ?? ""
+                    };
+
+                }).ToList(),
+                AssignedUsers = new List<AssignedUsersSummaryDto>(),
+            };
         }
     }
 }
