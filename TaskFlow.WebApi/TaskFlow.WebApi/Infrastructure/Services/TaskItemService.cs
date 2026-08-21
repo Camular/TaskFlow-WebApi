@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using TaskFlow.WebApi.Core.Authorization;
 using TaskFlow.WebApi.Core.DTOs.Task;
-using TaskFlow.WebApi.Core.Entities;
 using TaskFlow.WebApi.Core.Exceptions;
 using TaskFlow.WebApi.Core.Interfaces;
 using TaskFlow.WebApi.Infrastructure.Data;
