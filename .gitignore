@@ -480,10 +480,12 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Local secrets and environment
 appsettings.Development.json
 .env
 
-# Öğrenme / Cursor — public repoda görünmesin (diskte kalır)
+# Local / non-project
 .cursor/
 learning/
 PLAN.md
