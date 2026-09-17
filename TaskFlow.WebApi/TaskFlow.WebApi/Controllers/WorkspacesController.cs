@@ -154,5 +154,27 @@ namespace TaskFlow.WebApi.Controllers
             return CreatedAtAction(nameof(GetWorkspaceRoleByIdSummaryAsync), new { id , roleId = role.RoleId }, role);
 
         }
+
+        [HttpPut("{id}/roles/{roleId}")]
+
+        public async Task<IActionResult> UpdateWorkspaceRoleAsync([FromRoute] Guid id, [FromRoute] Guid roleId, [FromBody] UpdateWorkspaceRoleRequest request)
+        {
+            var userId = GetCurrentUserId();
+
+            var role = await _workspaceService.UpdateWorkspaceRoleAsync(userId, id, roleId, request);
+
+            return Ok(role);
+        }
+
+        [HttpDelete("{id}/roles/{roleId}")]
+
+        public async Task<IActionResult> DeleteWorkspaceRoleAsync([FromRoute] Guid id, [FromRoute] Guid roleId)
+        {
+            var userId = GetCurrentUserId();
+
+            await _workspaceService.DeleteWorkspaceRoleAsync(userId, id, roleId);
+
+            return NoContent();
+        }
     }
 }

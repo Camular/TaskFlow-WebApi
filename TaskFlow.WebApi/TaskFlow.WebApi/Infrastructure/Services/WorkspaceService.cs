@@ -471,5 +471,116 @@ namespace TaskFlow.WebApi.Infrastructure.Services
                 AssignedUsers = new List<AssignedUsersSummaryDto>(),
             };
         }
+
+        public async Task<RoleSummaryDto> UpdateWorkspaceRoleAsync(Guid userId, Guid workspaceId, Guid roleId, UpdateWorkspaceRoleRequest request)
+        {
+            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Workspace.RoleUpdate);
+
+            var permissionCount = await _context.Permissions
+                .CountAsync(p => request.PermissionIds.Contains(p.Id));
+
+            var roleNameExists = await _context.WorkspaceRoles
+                 .AnyAsync(r => ((r.WorkspaceId == null && r.Name.ToLower() == request.Name.ToLower()) || (r.WorkspaceId == workspaceId && r.Name.ToLower() == request.Name.ToLower())) && (r.Id != roleId));
+
+            var permissionIdDublicateCheck = request.PermissionIds.Distinct().Count() != request.PermissionIds.Count;
+
+            var containsRestrictedPermissions = request.PermissionIds.Contains(SystemPermissions.Workspace.DeleteId);
+
+            var permissionInfo = await _context.Permissions
+            .Where(p => request.PermissionIds.Contains(p.Id))
+            .ToListAsync();
+
+            if (permissionIdDublicateCheck)
+            {
+                throw new InvalidOperationException("Atanmak istenen izinler arasında tekrar eden izinler bulunuyor.");
+            }
+
+            if (roleNameExists)
+            {
+                throw new ConflictException($"'{request.Name}' adında bir rol zaten mevcut.");
+            }
+
+            if (permissionCount != request.PermissionIds.Count)
+            {
+                throw new InvalidOperationException("Atanmak istenen izinlerden bazıları geçersiz veya bulunamadı.");
+            }
+
+            if (containsRestrictedPermissions)
+            {
+                throw new InvalidOperationException("Atanmak istenen izinler arasında yasaklı izinler bulunuyor.");
+            }
+
+            var updateRole = await _context.WorkspaceRoles
+                .Include(r => r.UserWorkspaceRoles)
+                    .ThenInclude(uwr => uwr.User)
+                .Include(r => r.RolePermissions)
+                .FirstOrDefaultAsync(r => r.Id == roleId && r.WorkspaceId == workspaceId);
+
+            if(updateRole == null)
+            {
+                throw new KeyNotFoundException("Güncellenmek istenen role bulunamadı veya bu çalışma alanına ait değil.");
+            }
+
+            _context.RemoveRange(updateRole.RolePermissions);
+
+            updateRole.Name = request.Name;
+
+            updateRole.RolePermissions = request.PermissionIds.Select(pid => new RolePermission
+            {
+                PermissionId = pid
+            }).ToList();
+
+            await _context.SaveChangesAsync();
+
+            return new RoleSummaryDto
+            {
+                Name = updateRole.Name,
+                Permissions = updateRole.RolePermissions.Select(rp =>
+                {
+                    var info = permissionInfo.FirstOrDefault(p => p.Id == rp.PermissionId);
+                    return new PermissionSummaryDto
+                    {
+
+                        PermissionId = rp.PermissionId,
+                        Code = info?.Code ?? ""
+                    };
+
+                }).ToList(),
+                RoleId = roleId,
+                AssignedUsers = updateRole.UserWorkspaceRoles
+                    .Where(uwr => uwr.WorkspaceId == workspaceId)
+                    .Select(uwr => new AssignedUsersSummaryDto
+                    {
+                        Id = uwr.UserId,
+                        Email = uwr.User.Email
+                    })
+                    .ToList(),
+                WorkspaceId = updateRole.WorkspaceId
+            };
+        }
+
+        public async Task<bool> DeleteWorkspaceRoleAsync(Guid userId, Guid workspaceId, Guid roleId)
+        {
+            var userWorkspaceRole = await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Workspace.RoleDelete);
+
+            var roleInfo = await _context.WorkspaceRoles
+                .Include(wr => wr.UserWorkspaceRoles)
+                .FirstOrDefaultAsync(wr => wr.Id == roleId && wr.WorkspaceId == workspaceId);
+
+            if(roleInfo == null)
+            {
+                throw new KeyNotFoundException("Silinmek istenen rol bir sistem rolü veya bu workspace de bulunmamaktadır.");
+            }
+
+            if(roleInfo.UserWorkspaceRoles.Any())
+            {
+                throw new InvalidOperationException("silinmek istenen role atanmış kişiler bulunmaktadır.");
+            }
+
+            _context.WorkspaceRoles.Remove(roleInfo);
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
     }
 }
