@@ -18,5 +18,9 @@ namespace TaskFlow.WebApi.Core.Interfaces
         Task<RoleSummaryDto> GetWorkspaceRoleByIdSummaryAsync(Guid userId, Guid workspaceId, Guid roleId);
         Task<RoleSummaryDto> UpdateWorkspaceRoleAsync(Guid userId, Guid workspaceId, Guid roleId, UpdateWorkspaceRoleRequest request);
         Task<bool> DeleteWorkspaceRoleAsync(Guid userId, Guid workspaceId, Guid roleId);
+        Task<InvitationSummaryDto> CreateInvitationAsync(Guid userId, Guid workspaceId, CreateInvitationRequest request);
+        Task<List<InvitationSummaryDto>> GetWorkspaceInvitationsAsync(Guid userId, Guid workspaceId);
+        Task<bool> CancelWorkspaceInvitationAsync(Guid userId, Guid workspaceId, Guid invitationId);
+        Task<WorkspaceMemberDto> AcceptInvitationAsync(Guid userId, AcceptInvitationRequest request);
     }
 }

@@ -9,7 +9,8 @@ This repository contains the **backend** of TaskFlow (polyrepo). The API focuses
 - **Authentication:** Register / login / current user (`/me`) with BCrypt password hashing and JWT Bearer tokens
 - **Workspaces:** Create, update, delete (personal workspaces protected), list memberships
 - **Members:** Add / remove members, change roles, last-owner safeguards
-- **RBAC:** System roles (Owner, Administrator, Member, Viewer) plus workspace-scoped custom roles with permission assignment
+- **Invitations:** Invite by email, list, cancel, and accept with a token. Membership is created only when the invited account accepts. No outbound email yet; the token is returned by the API for testing.
+- **RBAC:** System roles (Owner, Administrator, Member, Viewer) plus workspace-scoped custom roles with permission assignment (create, update, delete)
 - **Tasks:** Workspace and personal task lists, create / update / delete, assign / unassign, status and deadline updates, summary vs detail DTOs
 - **Cross-cutting:** Global exception middleware (401 / 403 / 404 / 400 / 409), EF Core + PostgreSQL, Docker Compose for local database
 
@@ -90,7 +91,8 @@ Use the HTTPS URL printed by Kestrel (often `https://localhost:7xxx`). In Develo
 | Auth | `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me` |
 | Workspaces | `GET/POST /api/workspaces`, `GET/PUT/DELETE /api/workspaces/{id}` |
 | Members | `GET/POST /api/workspaces/{id}/members`, role update / remove |
-| Roles | `GET/POST /api/workspaces/{id}/roles`, `GET .../roles/{roleId}` |
+| Roles | `GET/POST /api/workspaces/{id}/roles`, `GET/PUT/DELETE .../roles/{roleId}` |
+| Invitations | `POST/GET /api/workspaces/{id}/invitations`, `DELETE .../invitations/{invitationId}`, `POST /api/workspaces/invitations/accept` |
 | Tasks | `GET /api/tasks`, workspace task CRUD, assign / unassign, status, deadline, detail |
 
 Protected endpoints need `Authorization: Bearer <token>`.
@@ -104,9 +106,22 @@ Protected endpoints need `Authorization: Bearer <token>`.
 
 ## Status / roadmap
 
-Implemented: auth, workspaces, members, custom role create/list/get, task API (detail + unassign).
+Implemented: auth, workspaces, members, custom roles (create / list / get / update / delete), invitations (create / list / cancel / accept), task API (detail + unassign).
 
-Next: custom role update & delete, invitations, projects, production hardening (rate limiting, hosting).
+Next: projects, production hardening (rate limiting, hosting). Outbound invitation email is not implemented.
+
+## Manual API coverage (7 Oct 2026)
+
+Checked over HTTPS against a local API. Re-run this set before a large portfolio push so older areas are not skipped.
+
+- Auth: register, duplicate register 409, password mismatch 400, login success and bad password 401, `GET /me` with and without a token
+- Workspaces: list, get, update, create, delete non-personal, block delete of a personal workspace, outsider get/update/delete 404
+- Members: list, add unknown email 404, add member, block demoting or removing the last owner, outsider list 403
+- Invitations: create (email normalized), duplicate pending 409, invite an existing member 400, bad role 404, bad email 400, list, cancel pending 204, cancel twice 400, cancelled row stays in the list, re-invite after cancel, accept by the invited account, accept twice 400, cancel after accept 400, stolen token 403, unknown token 404, missing token 401, viewer cannot create/list/cancel 403, outsider cannot list or cancel 404
+- Roles: create, list, get by id, update keeping the same name, name clash 409, block `workspace.delete` on a custom role, block update/delete of system roles, block delete while the role is assigned, viewer 403, outsider 404
+- Tasks: list mine and workspace tasks, get summary and detail, update, status, invalid status 400, deadline, assign a member, block assign of a non-member, unassign, delete, outsider 404, viewer can read and cannot create
+
+Known response issue: `POST /api/tasks/{workspaceId}/tasks` saves the task, then `CreatedAtAction` fails to build the location URL and the HTTP result is 400. Read, update, and delete of that task still work.
 
 ## License
 

@@ -176,5 +176,49 @@ namespace TaskFlow.WebApi.Controllers
 
             return NoContent();
         }
+
+        [HttpGet("{id}/invitations")]
+
+        public async Task<IActionResult> GetWorkspaceInvitationsAsync([FromRoute] Guid id)
+        {
+            var userId = GetCurrentUserId();
+
+            var invitations = await _workspaceService.GetWorkspaceInvitationsAsync(userId, id);
+
+            return Ok(invitations);
+        }
+
+        [HttpPost("{id}/invitations")]
+
+        public async Task<IActionResult> CreateInvitationAsync([FromRoute] Guid id, [FromBody] CreateInvitationRequest request)
+        {
+            var userId = GetCurrentUserId();
+
+            var invitation = await _workspaceService.CreateInvitationAsync(userId, id, request);
+
+            return Ok(invitation);
+        }
+
+        [HttpDelete("{id}/invitations/{invitationId}")]
+
+        public async Task<IActionResult> CancelWorkspaceInvitationAsync([FromRoute] Guid id, [FromRoute] Guid invitationId)
+        {
+            var userId = GetCurrentUserId();
+
+            await _workspaceService.CancelWorkspaceInvitationAsync(userId, id, invitationId);
+
+            return NoContent();
+        }
+
+        [HttpPost("invitations/accept")]
+
+        public async Task<IActionResult> AcceptInvitationAsync([FromBody] AcceptInvitationRequest request)
+        {
+            var userId = GetCurrentUserId();
+
+            var member = await _workspaceService.AcceptInvitationAsync(userId, request);
+
+            return Ok(member);
+        }
     }
 }

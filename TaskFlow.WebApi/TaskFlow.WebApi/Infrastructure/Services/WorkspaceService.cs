@@ -5,6 +5,7 @@ using TaskFlow.WebApi.Core.Entities;
 using TaskFlow.WebApi.Core.Exceptions;
 using TaskFlow.WebApi.Core.Interfaces;
 using TaskFlow.WebApi.Infrastructure.Data;
+using static TaskFlow.WebApi.Core.Authorization.SystemPermissions;
 using Workspace = TaskFlow.WebApi.Core.Entities.Workspace;
 
 namespace TaskFlow.WebApi.Infrastructure.Services
@@ -581,6 +582,177 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             await _context.SaveChangesAsync();
 
             return true;
+        }
+
+        public async Task<InvitationSummaryDto> CreateInvitationAsync(Guid userId, Guid workspaceId, CreateInvitationRequest request)
+        {
+            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Workspace.MemberAdd);
+
+            string email = request.Email.Trim().ToLowerInvariant();
+
+            var assignedRole = await _context.WorkspaceRoles.FindAsync(request.RoleId);
+
+            if (assignedRole == null || (assignedRole.WorkspaceId != null && assignedRole.WorkspaceId != workspaceId))
+            {
+                throw new KeyNotFoundException("Atanmak istenen rol bulunamadı veya bu çalışma alanı için geçerli değil.");
+            }
+
+            var targetUser = await _context.Users
+                .FirstOrDefaultAsync(u => u.Email == email);
+
+            if(targetUser != null)
+            {
+                var isAlreadyMember = await _context.UserWorkspaceRoles
+                .AnyAsync(uwr => uwr.UserId == targetUser.Id && uwr.WorkspaceId == workspaceId);
+
+                if (isAlreadyMember)
+                {
+                    throw new InvalidOperationException("Bu kullanıcı zaten bu çalışma alanının bir üyesidir.");
+                }
+            }
+
+            var isAlreadyInvited = await _context.Invitations
+               .AnyAsync(i => i.Email == email && i.WorkspaceId == workspaceId && i.Status == InvitationStatus.Pending);
+            
+            if(isAlreadyInvited)
+            {
+                throw new ConflictException("Bu kişinin daveti bulunmaktadır.");
+            }
+
+            var invitation = new Invitation
+            {
+                Id = Guid.NewGuid(),
+                Email = email,
+                RoleId = request.RoleId,
+                Status = InvitationStatus.Pending,
+                WorkspaceId = workspaceId,
+                InvitedByUserId = userId,
+                Token = Guid.NewGuid().ToString("N"),
+                ExpiresAt = DateTime.UtcNow.AddDays(7),
+                CreatedAt = DateTime.UtcNow,
+                InvitedBy = null!,
+                Role = null!,
+                Workspace = null!
+            };
+
+            _context.Invitations.Add(invitation);
+            await _context.SaveChangesAsync();
+
+            return new InvitationSummaryDto
+            {
+                Id = invitation.Id,
+                Email = invitation.Email,
+                RoleId = invitation.RoleId,
+                RoleName = assignedRole.Name,
+                Token = invitation.Token,
+                WorkspaceId = invitation.WorkspaceId,
+                Status = invitation.Status,
+                ExpiresAt = invitation.ExpiresAt
+            };
+        }
+        public async Task<List<InvitationSummaryDto>> GetWorkspaceInvitationsAsync(Guid userId, Guid workspaceId)
+        {
+            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Workspace.MemberAdd);
+
+            var invitationList = await _context.Invitations
+                .Where(i => i.WorkspaceId == workspaceId)
+                .Select(i => new InvitationSummaryDto
+                {
+                    Id = i.Id,
+                    Email = i.Email,
+                    RoleName = i.Role.Name,
+                    RoleId = i.RoleId,
+                    Status = i.Status,
+                    Token = i.Token,
+                    ExpiresAt = i.ExpiresAt,
+                    WorkspaceId = i.WorkspaceId
+
+                }).ToListAsync();
+
+            return invitationList;
+        }
+
+        public async Task<bool> CancelWorkspaceInvitationAsync(Guid userId, Guid workspaceId, Guid invitationId)
+        {
+            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Workspace.MemberAdd);
+
+            var invitation = await _context.Invitations
+                .Where(i => i.Id == invitationId && i.WorkspaceId == workspaceId)
+                .FirstOrDefaultAsync();
+
+            if (invitation == null)
+                throw new KeyNotFoundException("Davet bulunamadı veya bu çalışma alanına ait değil.");
+
+            if (invitation.Status != InvitationStatus.Pending)
+                throw new InvalidOperationException("Beklemede olmayan davet üzerinden iptal işlemi yapılamaz.");
+
+            invitation.Status = InvitationStatus.Cancelled;
+
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+
+        public async Task<WorkspaceMemberDto> AcceptInvitationAsync(Guid userId, AcceptInvitationRequest request)
+        {
+            var user = await _context.Users
+                .Where(u => u.Id == userId)
+                .FirstOrDefaultAsync();
+
+            if (user == null)
+                throw new KeyNotFoundException("Kullanıcı bulunamadı.");
+
+            var invitation = await _context.Invitations
+                .Include(i => i.Role)
+                .Where(i => i.Token == request.Token.Trim())
+                .FirstOrDefaultAsync();
+
+            if (invitation == null)
+                throw new KeyNotFoundException("Davet bulunamadı");
+
+            if (invitation.Status != InvitationStatus.Pending)
+                throw new InvalidOperationException("İptal edilmiş veya daha önce kabul edilmiş davet tekrar kabul edilmez.");
+
+            if(invitation.ExpiresAt < DateTime.UtcNow)
+            {
+                invitation.Status = InvitationStatus.Expired;
+                await _context.SaveChangesAsync();
+                throw new InvalidOperationException("Süresi dolmuş davet üzerinde bu işlem yapılamaz.");
+            }
+
+            if (invitation.Email.Trim().ToLowerInvariant() != user.Email.Trim().ToLowerInvariant())
+                throw new ForbiddenException("Davet edilen kişinin emaili ile istek atılan kişinin emaili arasında uyuşmazlık bulunmaktadır.");
+
+            var isMember = await _context.UserWorkspaceRoles
+                .Where(uwr => uwr.UserId == userId && uwr.WorkspaceId == invitation.WorkspaceId)
+                .AnyAsync();
+
+            if (isMember)
+                throw new InvalidOperationException("Davet edilen kişi bu çalışma alanında zaten üye olarak bulunmaktadır.");
+
+            var userWorkspaceRole = new UserWorkspaceRole
+            {
+                RoleId = invitation.RoleId,
+                UserId = user.Id,
+                WorkspaceId = invitation.WorkspaceId,
+                Role = null!,
+                User = null!,
+                Workspace = null!
+            };
+
+            invitation.Status = InvitationStatus.Accepted;
+
+            await _context.UserWorkspaceRoles.AddAsync(userWorkspaceRole);
+            await _context.SaveChangesAsync();
+
+            return new WorkspaceMemberDto
+            {
+                UserId = user.Id,
+                UserName = user.Username,
+                Email = user.Email,
+                RoleId = invitation.RoleId,
+                RoleName = invitation.Role.Name
+            };
         }
     }
 }
