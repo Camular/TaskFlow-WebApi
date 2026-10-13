@@ -22,6 +22,8 @@ builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
 
 builder.Services.AddScoped<ITaskItemService, TaskItemService>();
 
+builder.Services.AddScoped<IProjectService, ProjectService>();
+
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 
 var secretKey = jwtSettings["SecretKey"]

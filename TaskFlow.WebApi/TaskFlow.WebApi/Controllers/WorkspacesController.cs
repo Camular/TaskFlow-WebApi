@@ -19,15 +19,25 @@ namespace TaskFlow.WebApi.Controllers
             _workspaceService = workspaceService;
         }
 
+        // ====================================================================================================
+        // Current user
+        // Reads the signed-in user id from the access token.
+        // ====================================================================================================
+
         private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userIdClaim))
             {
-                throw new UnauthorizedException("Geçersiz veya süresi dolmuş token.");
+                throw new UnauthorizedException("The access token is missing, invalid, or expired.");
             }
             return Guid.Parse(userIdClaim);
         }
+
+        // ====================================================================================================
+        // Workspaces
+        // List, get, create, update, and delete a workspace.
+        // ====================================================================================================
 
         [HttpGet]
         public async Task<IActionResult> GetMyWorkspacesAsync()
@@ -37,6 +47,17 @@ namespace TaskFlow.WebApi.Controllers
             var workspaces = await _workspaceService.GetUserWorkspaceSummaryAsync(userId);
 
             return Ok(workspaces);
+        }
+
+        [HttpGet("{id}")]
+        [ActionName(nameof(GetWorkspaceByIdAsync))]
+        public async Task<IActionResult> GetWorkspaceByIdAsync([FromRoute] Guid id)
+        {
+            var userId = GetCurrentUserId();
+
+            var workspace = await _workspaceService.GetWorkspaceByIdAsync(userId, id);
+
+            return Ok(workspace);
         }
 
         [HttpPost]
@@ -69,16 +90,10 @@ namespace TaskFlow.WebApi.Controllers
             return NoContent();
         }
 
-        [HttpGet("{id}")]
-        [ActionName(nameof(GetWorkspaceByIdAsync))]
-        public async Task<IActionResult> GetWorkspaceByIdAsync([FromRoute] Guid id)
-        {
-            var userId = GetCurrentUserId();
-
-            var workspace = await _workspaceService.GetWorkspaceByIdAsync(userId, id);
-
-            return Ok(workspace);
-        }
+        // ====================================================================================================
+        // Members
+        // List members, change a member role, and remove a member.
+        // ====================================================================================================
 
         [HttpGet("{id}/members")]
         public async Task<IActionResult> GetWorkspaceMembersAsync([FromRoute] Guid id)
@@ -88,37 +103,6 @@ namespace TaskFlow.WebApi.Controllers
             var workspace = await _workspaceService.GetWorkspaceMembersAsync(userId, id);
 
             return Ok(workspace);
-        }
-
-        [HttpGet("{id}/roles")]
-        public async Task<IActionResult> GetWorkspaceRolesSummaryAsync([FromRoute] Guid id)
-        {
-            var userId = GetCurrentUserId();
-
-            var roles = await _workspaceService.GetWorkspaceRolesSummaryAsync(userId, id);
-
-            return Ok(roles);
-        }
-
-        [HttpGet("{id}/roles/{roleId}")]
-        [ActionName(nameof(GetWorkspaceRoleByIdSummaryAsync))]
-        public async Task<IActionResult> GetWorkspaceRoleByIdSummaryAsync([FromRoute] Guid id, [FromRoute] Guid roleId)
-        {
-            var userId = GetCurrentUserId();
-
-            var role = await _workspaceService.GetWorkspaceRoleByIdSummaryAsync(userId, id, roleId);
-
-            return Ok(role);
-        }
-
-        [HttpPost("{id}/members")]
-        public async Task<IActionResult> AddWorkspaceMemberAsync([FromRoute] Guid id, [FromBody] AddWorkspaceMemberRequest request)
-        {
-            var userId = GetCurrentUserId();
-
-            var addMember = await _workspaceService.AddWorkspaceMemberAsync(userId, id, request);
-
-            return Ok(addMember);
         }
 
         [HttpPut("{id}/members/{memberId}")]
@@ -142,6 +126,32 @@ namespace TaskFlow.WebApi.Controllers
             await _workspaceService.RemoveWorkspaceMemberAsync(userId, id, memberId);
 
             return NoContent();
+        }
+
+        // ====================================================================================================
+        // Roles
+        // List, get, create, update, and delete custom workspace roles.
+        // ====================================================================================================
+
+        [HttpGet("{id}/roles")]
+        public async Task<IActionResult> GetWorkspaceRolesSummaryAsync([FromRoute] Guid id)
+        {
+            var userId = GetCurrentUserId();
+
+            var roles = await _workspaceService.GetWorkspaceRolesSummaryAsync(userId, id);
+
+            return Ok(roles);
+        }
+
+        [HttpGet("{id}/roles/{roleId}")]
+        [ActionName(nameof(GetWorkspaceRoleByIdSummaryAsync))]
+        public async Task<IActionResult> GetWorkspaceRoleByIdSummaryAsync([FromRoute] Guid id, [FromRoute] Guid roleId)
+        {
+            var userId = GetCurrentUserId();
+
+            var role = await _workspaceService.GetWorkspaceRoleByIdSummaryAsync(userId, id, roleId);
+
+            return Ok(role);
         }
 
         [HttpPost("{id}/roles")]
@@ -176,6 +186,11 @@ namespace TaskFlow.WebApi.Controllers
 
             return NoContent();
         }
+
+        // ====================================================================================================
+        // Invitations
+        // List, create, and cancel invitations. Accept does not require an existing membership.
+        // ====================================================================================================
 
         [HttpGet("{id}/invitations")]
 

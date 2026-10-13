@@ -4,7 +4,7 @@ namespace TaskFlow.WebApi.Core.DTOs.Workspace
 {
     public class UpdateMemberRoleRequest
     {
-        [Required(ErrorMessage = "Rol seçimi zorunludur.")]
+        [Required(ErrorMessage = "A role is required.")]
         public Guid RoleId { get; set; }
     }
 }

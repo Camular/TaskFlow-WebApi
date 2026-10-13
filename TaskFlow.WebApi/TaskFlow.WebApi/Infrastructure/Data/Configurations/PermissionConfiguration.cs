@@ -21,220 +21,220 @@ namespace TaskFlow.WebApi.Infrastructure.Data.Configurations
             builder.HasData(
 
                 // ==========================================
-                //              Task İzinleri
+                //              Task permissions
                 // ==========================================
 
                 new Permission
                 {
                     Id = SystemPermissions.TaskItem.CreateId,
                     Code = SystemPermissions.TaskItem.Create,
-                    Description = "Grup içindeki görevleri oluşturma yetkisi."
+                    Description = "Create tasks in the workspace."
                 },
 
                 new Permission
                 {
                     Id = SystemPermissions.TaskItem.ReadId,
                     Code = SystemPermissions.TaskItem.Read,
-                    Description = "Grup içindeki görevleri görüntüleme yetkisi."
+                    Description = "View tasks in the workspace."
                 },
 
                 new Permission
                 {
                     Id = SystemPermissions.TaskItem.UpdateId,
                     Code = SystemPermissions.TaskItem.Update,
-                    Description = "Grup içindeki görevleri güncelleme yetkisi."
+                    Description = "Update tasks in the workspace."
                 },
 
                 new Permission
                 {
                     Id = SystemPermissions.TaskItem.DeleteId,
                     Code = SystemPermissions.TaskItem.Delete,
-                    Description = "Grup içindeki görevleri silme yetkisi."
+                    Description = "Delete tasks in the workspace."
                 },
 
                 new Permission
                 {
                     Id = SystemPermissions.TaskItem.StatusUpdateId,
                     Code = SystemPermissions.TaskItem.StatusUpdate,
-                    Description = "Grup içindeki görevlerin durumunu güncelleme yetkisi."
+                    Description = "Update the status of tasks in the workspace."
                 },
 
                 new Permission
                 {
                     Id = SystemPermissions.TaskItem.DeadlineUpdateId,
                     Code = SystemPermissions.TaskItem.DeadlineUpdate,
-                    Description = "Grup içindeki görevlerin son teslim tarihini güncelleme yetkisi."
+                    Description = "Update task deadlines in the workspace."
                 },
 
                 new Permission
                 {
                     Id = SystemPermissions.TaskItem.AssignId,
                     Code = SystemPermissions.TaskItem.Assign,
-                    Description = "Grup içindeki görevleri atama yetkisi."
+                    Description = "Assign tasks in the workspace."
                 },
 
                 // ==========================================
-                //              Workspace İzinleri
+                //              Workspace permissions
                 // ==========================================
 
                 new Permission
                 {
                     Id = SystemPermissions.Workspace.ViewId,
                     Code = SystemPermissions.Workspace.View,
-                    Description = "Çalışma alanını ve genel özet ekranını görüntüleme yetkisi."
+                    Description = "View the workspace and its summary."
                 },
                 new Permission
                 {
                     Id = SystemPermissions.Workspace.MemberAddId,
                     Code = SystemPermissions.Workspace.MemberAdd,
-                    Description = "Çalışma alanına yeni takım arkadaşı/üye davet etme yetkisi."
+                    Description = "Invite a member to the workspace."
                 },
                 new Permission
                 {
                     Id = SystemPermissions.Workspace.MemberRemoveId,
                     Code = SystemPermissions.Workspace.MemberRemove,
-                    Description = "Çalışma alanından mevcut bir üyeyi tamamen çıkarma yetkisi."
+                    Description = "Remove a member from the workspace."
                 },
                 new Permission
                 {
                     Id = SystemPermissions.Workspace.RoleAssignId,
                     Code = SystemPermissions.Workspace.RoleAssign,
-                    Description = "Çalışma alanındaki üyelere rol (Admin, Member vb.) atama ve değiştirme yetkisi."
+                    Description = "Assign and change member roles in the workspace."
                 },
                 new Permission
                 {
                     Id = SystemPermissions.Workspace.RoleCreateId,
                     Code = SystemPermissions.Workspace.RoleCreate,
-                    Description = "Çalışma alanına özel (Custom Role) yeni roller tanımlama yetkisi."
+                    Description = "Create custom roles for the workspace."
                 },
                 new Permission
                 {
                     Id = SystemPermissions.Workspace.RoleUpdateId,
                     Code = SystemPermissions.Workspace.RoleUpdate,
-                    Description = "Çalışma alanına özel tanımlanmış rollerin yetki matrisini güncelleme yetkisi."
+                    Description = "Update the permission set of a custom workspace role."
                 },
                 new Permission
                 {
                     Id = SystemPermissions.Workspace.RoleDeleteId,
                     Code = SystemPermissions.Workspace.RoleDelete,
-                    Description = "Çalışma alanına özel oluşturulmuş rolleri tamamen silme yetkisi."
+                    Description = "Delete a custom role from the workspace."
                 },
                 new Permission
                 {
                     Id = SystemPermissions.Workspace.UpdateId,
                     Code = SystemPermissions.Workspace.Update,
-                    Description = "Çalışma alanının ismini, açıklamasını ve kurumsal genel ayarlarını düzenleme yetkisi."
+                    Description = "Update the workspace name, description, and settings."
                 },
                 new Permission
                 {
                     Id = SystemPermissions.Workspace.DeleteId,
                     Code = SystemPermissions.Workspace.Delete,
-                    Description = "Çalışma alanını (Workspace) tüm verileriyle birlikte kalıcı olarak silme yetkisi."
+                    Description = "Permanently delete the workspace and its data."
                 },
 
 
                 // ==========================================
-                //              ActivityLog İzinleri
+                //              Activity log permissions
                 // ==========================================
 
                 new Permission
                 {
                     Id = SystemPermissions.ActivityLog.ReadId,
                     Code = SystemPermissions.ActivityLog.Read,
-                    Description = "Activity logları görüntüleme yetkisi."
+                    Description = "View activity logs."
                 },
 
                 // ==========================================
-                //              Comments İzinleri
+                //              Comment permissions
                 // ==========================================
 
                 new Permission
                 {
                     Id = SystemPermissions.Comments.CreateId,
                     Code = SystemPermissions.Comments.Create,
-                    Description = "Görevler için yorum oluşturma yetkisi."
+                    Description = "Create comments on tasks."
                 },
 
                 new Permission
                 {
                     Id = SystemPermissions.Comments.ReadId,
                     Code = SystemPermissions.Comments.Read,
-                    Description = "Görevler için yorumları görüntüleme yetkisi."
+                    Description = "View comments on tasks."
                 },
 
                 new Permission
                 {
                     Id = SystemPermissions.Comments.UpdateId,
                     Code = SystemPermissions.Comments.Update,
-                    Description = "Görevler için yorumları güncelleme yetkisi."
+                    Description = "Update comments on tasks."
                 },
 
                 new Permission
                 {
                     Id = SystemPermissions.Comments.DeleteId,
                     Code = SystemPermissions.Comments.Delete,
-                    Description = "Görevler için yorumları silme yetkisi."
+                    Description = "Delete comments on tasks."
                 },
 
                 // ==========================================
-                //              Projects İzinleri
+                //              Project permissions
                 // ==========================================
 
                 new Permission
                 {
                     Id = SystemPermissions.Projects.CreateId,
                     Code = SystemPermissions.Projects.Create,
-                    Description = "Çalışma alanı altında yeni panolar/projeler oluşturma yetkisi."
+                    Description = "Create projects in the workspace."
                 },
                 new Permission
                 {
                     Id = SystemPermissions.Projects.ReadId,
                     Code = SystemPermissions.Projects.Read,
-                    Description = "Mevcut projeleri, pano listelerini ve proje detaylarını görüntüleme yetkisi."
+                    Description = "View projects and their details."
                 },
                 new Permission
                 {
                     Id = SystemPermissions.Projects.UpdateId,
                     Code = SystemPermissions.Projects.Update,
-                    Description = "Mevcut projelerin isim, renk, kategori ve temel ayarlarını düzenleme yetkisi."
+                    Description = "Update a project's name, color, category, and settings."
                 },
                 new Permission
                 {
                     Id = SystemPermissions.Projects.DeleteId,
                     Code = SystemPermissions.Projects.Delete,
-                    Description = "Bir projeyi/panoyu içindeki tüm görevlerle birlikte kalıcı olarak silme yetkisi."
+                    Description = "Permanently delete a project and its tasks."
                 },
 
                 // ==========================================
-                //              Attachments İzinleri
+                //              Attachment permissions
                 // ==========================================
 
                 new Permission
                 {
                     Id = SystemPermissions.Attachments.CreateId,
                     Code = SystemPermissions.Attachments.Create,
-                    Description = "Görevler için dosya ekleme yetkisi."
+                    Description = "Add files to tasks."
                 },
 
                 new Permission
                 {
                     Id = SystemPermissions.Attachments.ReadId,
                     Code = SystemPermissions.Attachments.Read,
-                    Description = "Görevler için dosyaları görüntüleme yetkisi."
+                    Description = "View files attached to tasks."
                 },
 
                 new Permission
                 {
                     Id = SystemPermissions.Attachments.DeleteId,
                     Code = SystemPermissions.Attachments.Delete,
-                    Description = "Görevler için dosyaları silme yetkisi."
+                    Description = "Delete files attached to tasks."
                 },
 
                 new Permission
                 {
                     Id = SystemPermissions.Attachments.UpdateId,
                     Code = SystemPermissions.Attachments.Update,
-                    Description = "Görevler için dosyaları güncelleme yetkisi."
+                    Description = "Update files attached to tasks."
                 }
             );
         }

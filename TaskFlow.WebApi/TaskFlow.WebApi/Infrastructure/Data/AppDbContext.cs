@@ -17,6 +17,7 @@ namespace TaskFlow.WebApi.Infrastructure.Data
         public DbSet<TaskItem> TaskItems { get; set; }
         public DbSet<UserWorkspaceRole> UserWorkspaceRoles { get; set; }
         public DbSet<Invitation> Invitations { get; set; }
+        public DbSet<Project> Projects { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

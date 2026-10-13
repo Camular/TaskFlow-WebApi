@@ -4,10 +4,10 @@ namespace TaskFlow.WebApi.Core.DTOs.Task;
 
 public class UpdateTaskRequest
 {
-    [Required(ErrorMessage = "Bir başlık belirleyin.")]
-    [StringLength(100, ErrorMessage = "Başlık en fazla 100 karakter olabilir.")]
+    [Required(ErrorMessage = "Title is required.")]
+    [StringLength(100, ErrorMessage = "Title cannot be longer than 100 characters.")]
     public required string Title { get; set; }
 
-    [StringLength(500, ErrorMessage = "Tanım en fazla 500 karakter olabilir.")]
+    [StringLength(500, ErrorMessage = "Description cannot be longer than 500 characters.")]
     public string? Description { get; set; }
 }

@@ -60,7 +60,7 @@ namespace TaskFlow.WebApi.Infrastructure.Middleware
             else
             {  
                 var message = statusCode == HttpStatusCode.InternalServerError
-                    ? "Sunucu taraflı beklenmeyen bir hata oluştu."
+                    ? "An unexpected server error occurred."
                     : e.Message;
 
                 response = new

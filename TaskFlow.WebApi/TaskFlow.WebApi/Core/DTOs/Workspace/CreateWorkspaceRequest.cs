@@ -4,11 +4,11 @@ namespace TaskFlow.WebApi.Core.DTOs.Workspace
 {
     public class CreateWorkspaceRequest
     {
-        [Required(ErrorMessage = "Çalışma alanı adı boş bırakılamaz.")]
-        [StringLength(50, ErrorMessage = "Çalışma alanı adı en fazla 50 karakter olabilir.")]
+        [Required(ErrorMessage = "Workspace name is required.")]
+        [StringLength(50, ErrorMessage = "Workspace name cannot be longer than 50 characters.")]
         public string SpaceName { get; set; } = string.Empty;
 
-        [StringLength(500, ErrorMessage = "Açıklama en fazla 500 karakter olabilir.")]
+        [StringLength(500, ErrorMessage = "Description cannot be longer than 500 characters.")]
         public string? SpaceDescription { get; set; }
     }
 }

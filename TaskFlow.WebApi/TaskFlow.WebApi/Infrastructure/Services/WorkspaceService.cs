@@ -19,6 +19,11 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             _context = context;
         }
 
+        // ====================================================================================================
+        // Guards
+        // Shared membership and permission check used by the actions below.
+        // ====================================================================================================
+
         private async Task<UserWorkspaceRole> CheckAndGetWorkspaceRoleAsync(Guid userId, Guid workspaceId, string permissionCode)
         {
             var userWorkspaceRole = await _context.UserWorkspaceRoles
@@ -30,7 +35,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             if (userWorkspaceRole == null)
             {
-                throw new KeyNotFoundException("Çalışma alanı bulunamadı veya bu çalışma alanına erişim izniniz yok.");
+                throw new KeyNotFoundException("Workspace was not found, or you do not have access to it.");
             }
 
             var hasPermission = userWorkspaceRole.Role.RolePermissions
@@ -38,11 +43,17 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             if (!hasPermission)
             {
-                throw new ForbiddenException($"Bu işlemi gerçekleştirmek için '{permissionCode}' yetkiniz bulunmamaktadır.");
+                throw new ForbiddenException($"You do not have the '{permissionCode}' permission required for this operation.");
             }
 
             return userWorkspaceRole;
         }
+
+
+        // ====================================================================================================
+        // Workspaces
+        // List, get, create, update, and delete a workspace.
+        // ====================================================================================================
 
         public async Task<List<WorkspaceSummaryDto>> GetUserWorkspaceSummaryAsync(Guid userId)
         {
@@ -59,6 +70,28 @@ namespace TaskFlow.WebApi.Infrastructure.Services
                 .ToListAsync();
         }
 
+        public async Task<WorkspaceSummaryDto> GetWorkspaceByIdAsync(Guid userId, Guid workspaceId)
+        {
+            var userWorkspaceRole = await _context.UserWorkspaceRoles
+                .Include(uwr => uwr.Workspace)
+                .Include(uwr => uwr.Role)
+                .FirstOrDefaultAsync(uwr => uwr.UserId == userId && uwr.WorkspaceId == workspaceId);
+
+            if (userWorkspaceRole == null)
+            {
+                throw new KeyNotFoundException("Workspace was not found, or you do not have access to it.");
+            }
+
+            return new WorkspaceSummaryDto
+            {
+                Id = userWorkspaceRole.Workspace.Id,
+                SpaceName = userWorkspaceRole.Workspace.SpaceName,
+                SpaceDescription = userWorkspaceRole.Workspace.SpaceDescription ?? "",
+                IsPersonal = userWorkspaceRole.Workspace.IsPersonal,
+                RoleName = userWorkspaceRole.Role.Name
+            };
+        }
+
         public async Task<WorkspaceSummaryDto> CreateWorkspaceAsync(Guid userId, CreateWorkspaceRequest request)
         {
             await using var transaction = await _context.Database.BeginTransactionAsync();
@@ -70,7 +103,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
                 if (isNameExists)
                 {
-                    throw new InvalidOperationException($"'{request.SpaceName}' adında bir çalışma alanınız zaten mevcut.");
+                    throw new InvalidOperationException($"You already have a workspace named '{request.SpaceName}'.");
                 }
 
                 var workspace = new Workspace
@@ -139,7 +172,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             if (userWorkspaceRole.Workspace.IsPersonal)
             {
-                throw new InvalidOperationException("Kişisel çalışma alanları silinemez.");
+                throw new InvalidOperationException("Personal workspaces cannot be deleted.");
             }
 
             _context.Workspaces.Remove(userWorkspaceRole.Workspace);
@@ -148,27 +181,11 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             return true;
         }
 
-        public async Task<WorkspaceSummaryDto> GetWorkspaceByIdAsync(Guid userId, Guid workspaceId)
-        {
-            var userWorkspaceRole = await _context.UserWorkspaceRoles
-                .Include(uwr => uwr.Workspace)
-                .Include(uwr => uwr.Role)
-                .FirstOrDefaultAsync(uwr => uwr.UserId == userId && uwr.WorkspaceId == workspaceId);
 
-            if (userWorkspaceRole == null)
-            {
-                throw new KeyNotFoundException("Çalışma alanı bulunamadı veya bu çalışma alanına erişim izniniz yok.");
-            }
-
-            return new WorkspaceSummaryDto
-            {
-                Id = userWorkspaceRole.Workspace.Id,
-                SpaceName = userWorkspaceRole.Workspace.SpaceName,
-                SpaceDescription = userWorkspaceRole.Workspace.SpaceDescription ?? "",
-                IsPersonal = userWorkspaceRole.Workspace.IsPersonal,
-                RoleName = userWorkspaceRole.Role.Name
-            };
-        }
+        // ====================================================================================================
+        // Members
+        // List members, change a member role, and remove a member.
+        // ====================================================================================================
 
         public async Task<List<WorkspaceMemberDto>> GetWorkspaceMembersAsync(Guid userId, Guid workspaceId)
         {
@@ -177,7 +194,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             if (!isMember)
             {
-                throw new ForbiddenException("Bu çalışma alanının üyelerini görüntülemek için çalışma alanına üye olmalısınız.");
+                throw new ForbiddenException("You must be a member of this workspace to view its members.");
             }
 
             return await _context.UserWorkspaceRoles
@@ -193,127 +210,6 @@ namespace TaskFlow.WebApi.Infrastructure.Services
                 .ToListAsync();
         }
 
-        public async Task<List<RoleSummaryDto>> GetWorkspaceRolesSummaryAsync(Guid userId, Guid workspaceId)
-        {
-            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Workspace.View);
-
-            return await _context.WorkspaceRoles
-                .Where(wr => wr.WorkspaceId == workspaceId || wr.WorkspaceId == null)
-                .Select(wr => new RoleSummaryDto
-                {
-                    RoleId = wr.Id,
-                    WorkspaceId = wr.WorkspaceId,
-                    Name = wr.Name,
-                    Permissions = wr.RolePermissions.Select(rp => new PermissionSummaryDto
-                    {
-
-                        PermissionId = rp.PermissionId,
-                        Code = rp.Permission.Code ?? ""
-                    }).ToList(),
-
-                    AssignedUsers = wr.UserWorkspaceRoles
-                    .Where(uwr => uwr.WorkspaceId == workspaceId)
-                    .Select(uwr => new AssignedUsersSummaryDto
-                    {
-                        Id = uwr.UserId,
-                        Email = uwr.User.Email
-                    })
-                    .ToList(),
-
-                }).ToListAsync();
-            
-        }
-        
-        
-        public async Task<RoleSummaryDto> GetWorkspaceRoleByIdSummaryAsync(Guid userId, Guid workspaceId, Guid roleId)
-        {
-
-            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Workspace.View);
-
-            var workspaceRole = await _context.WorkspaceRoles
-                .Where(wr => (wr.WorkspaceId == workspaceId || wr.WorkspaceId == null) && (wr.Id == roleId))
-                .Select(wr => new RoleSummaryDto
-                {
-                    RoleId = wr.Id,
-                    WorkspaceId = wr.WorkspaceId,
-                    Name = wr.Name,
-                    Permissions = wr.RolePermissions.Select(rp => new PermissionSummaryDto
-                    {
-
-                        PermissionId = rp.PermissionId,
-                        Code = rp.Permission.Code ?? ""
-                    }).ToList(),
-
-                    AssignedUsers = wr.UserWorkspaceRoles
-                    .Where(uwr => uwr.WorkspaceId == workspaceId)
-                    .Select(uwr => new AssignedUsersSummaryDto
-                    {
-                        Id = uwr.UserId,
-                        Email = uwr.User.Email
-                    })
-                    .ToList(),
-
-                }).FirstOrDefaultAsync();
-
-            if (workspaceRole == null)
-            {
-                throw new KeyNotFoundException("Bu Role Bulunduğunuz Workspace'e ait değildir.");
-            }
-
-            return workspaceRole;
-
-        }
-        
-        public async Task<WorkspaceMemberDto> AddWorkspaceMemberAsync(Guid requesterUserId, Guid workspaceId, AddWorkspaceMemberRequest request)
-        {
-            await CheckAndGetWorkspaceRoleAsync(requesterUserId, workspaceId, SystemPermissions.Workspace.MemberAdd);
-
-            var targetUser = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == request.Email.ToLowerInvariant());
-
-            if (targetUser == null)
-            {
-                throw new KeyNotFoundException("Eklenmek istenen e-posta adresine sahip bir kullanıcı bulunamadı.");
-            }
-
-            var isAlreadyMember = await _context.UserWorkspaceRoles
-                .AnyAsync(uwr => uwr.UserId == targetUser.Id && uwr.WorkspaceId == workspaceId);
-
-            if (isAlreadyMember)
-            {
-                throw new InvalidOperationException("Bu kullanıcı zaten bu çalışma alanının bir üyesidir.");
-            }
-
-            var assignedRole = await _context.WorkspaceRoles.FindAsync(request.RoleId);
-
-            if (assignedRole == null || (assignedRole.WorkspaceId != null && assignedRole.WorkspaceId != workspaceId))
-            {
-                throw new KeyNotFoundException("Atanmak istenen rol bulunamadı veya bu çalışma alanı için geçerli değil.");
-            }
-
-            var userWorkspaceRole = new UserWorkspaceRole
-            {
-                RoleId = request.RoleId,
-                UserId = targetUser.Id,
-                WorkspaceId = workspaceId,
-                Role = null!,
-                User = null!,
-                Workspace = null!
-            };
-
-            await _context.UserWorkspaceRoles.AddAsync(userWorkspaceRole);
-            await _context.SaveChangesAsync();
-
-            return new WorkspaceMemberDto
-            {
-                UserId = targetUser.Id,
-                UserName = targetUser.Username,
-                Email = targetUser.Email,
-                RoleId = request.RoleId,
-                RoleName = assignedRole.Name
-            };
-        }
-
         public async Task<WorkspaceMemberDto> UpdateMemberRoleAsync(Guid requesterUserId, Guid workspaceId, Guid targetUserId, UpdateMemberRoleRequest request)
         {
             await CheckAndGetWorkspaceRoleAsync(requesterUserId, workspaceId, SystemPermissions.Workspace.RoleAssign);
@@ -324,7 +220,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             if (targetMemberRole == null)
             {
-                throw new KeyNotFoundException("Rolü değiştirilmek istenen üye bu çalışma alanında bulunamadı.");
+                throw new KeyNotFoundException("The member whose role you want to change was not found in this workspace.");
             }
 
             if (targetMemberRole.RoleId == SystemRoles.OwnerId && request.RoleId != SystemRoles.OwnerId)
@@ -334,7 +230,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
                 if (ownerCount <= 1)
                 {
-                    throw new InvalidOperationException("Çalışma alanında en az bir Sahip (Owner) bulunmalıdır. Son sahibin rolünü değiştiremezsiniz.");
+                    throw new InvalidOperationException("A workspace must keep at least one Owner. You cannot change the role of the last Owner.");
                 }
             }
 
@@ -342,7 +238,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             if (newRole == null || (newRole.WorkspaceId != null && newRole.WorkspaceId != workspaceId))
             {
-                throw new KeyNotFoundException("Atanmak istenen rol bulunamadı veya bu çalışma alanı için geçerli değil.");
+                throw new KeyNotFoundException("The selected role was not found, or it is not valid for this workspace.");
             }
 
             _context.UserWorkspaceRoles.Remove(targetMemberRole);
@@ -379,7 +275,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             if (targetMemberRole == null)
             {
-                throw new KeyNotFoundException("Çıkarılmak istenen üye bu çalışma alanında bulunamadı.");
+                throw new KeyNotFoundException("The member you want to remove was not found in this workspace.");
             }
 
             if (targetMemberRole.RoleId == SystemRoles.OwnerId)
@@ -389,7 +285,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
                 if (ownerCount <= 1)
                 {
-                    throw new InvalidOperationException("Çalışma alanındaki tek Sahip (Owner) takımdan çıkarılamaz. Önce sahipliği başka bir üyeye devretmelisiniz.");
+                    throw new InvalidOperationException("The only Owner of the workspace cannot be removed. Transfer ownership to another member first.");
                 }
             }
 
@@ -397,6 +293,82 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             await _context.SaveChangesAsync();
 
             return true;
+        }
+
+
+        // ====================================================================================================
+        // Roles
+        // List, get, create, update, and delete custom workspace roles.
+        // ====================================================================================================
+
+        public async Task<List<RoleSummaryDto>> GetWorkspaceRolesSummaryAsync(Guid userId, Guid workspaceId)
+        {
+            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Workspace.View);
+
+            return await _context.WorkspaceRoles
+                .Where(wr => wr.WorkspaceId == workspaceId || wr.WorkspaceId == null)
+                .Select(wr => new RoleSummaryDto
+                {
+                    RoleId = wr.Id,
+                    WorkspaceId = wr.WorkspaceId,
+                    Name = wr.Name,
+                    Permissions = wr.RolePermissions.Select(rp => new PermissionSummaryDto
+                    {
+
+                        PermissionId = rp.PermissionId,
+                        Code = rp.Permission.Code ?? ""
+                    }).ToList(),
+
+                    AssignedUsers = wr.UserWorkspaceRoles
+                    .Where(uwr => uwr.WorkspaceId == workspaceId)
+                    .Select(uwr => new AssignedUsersSummaryDto
+                    {
+                        Id = uwr.UserId,
+                        Email = uwr.User.Email
+                    })
+                    .ToList(),
+
+                }).ToListAsync();
+            
+        }
+
+        public async Task<RoleSummaryDto> GetWorkspaceRoleByIdSummaryAsync(Guid userId, Guid workspaceId, Guid roleId)
+        {
+
+            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Workspace.View);
+
+            var workspaceRole = await _context.WorkspaceRoles
+                .Where(wr => (wr.WorkspaceId == workspaceId || wr.WorkspaceId == null) && (wr.Id == roleId))
+                .Select(wr => new RoleSummaryDto
+                {
+                    RoleId = wr.Id,
+                    WorkspaceId = wr.WorkspaceId,
+                    Name = wr.Name,
+                    Permissions = wr.RolePermissions.Select(rp => new PermissionSummaryDto
+                    {
+
+                        PermissionId = rp.PermissionId,
+                        Code = rp.Permission.Code ?? ""
+                    }).ToList(),
+
+                    AssignedUsers = wr.UserWorkspaceRoles
+                    .Where(uwr => uwr.WorkspaceId == workspaceId)
+                    .Select(uwr => new AssignedUsersSummaryDto
+                    {
+                        Id = uwr.UserId,
+                        Email = uwr.User.Email
+                    })
+                    .ToList(),
+
+                }).FirstOrDefaultAsync();
+
+            if (workspaceRole == null)
+            {
+                throw new KeyNotFoundException("This role does not belong to your workspace.");
+            }
+
+            return workspaceRole;
+
         }
 
         public async Task<RoleSummaryDto> CreateWorkspaceRoleAsync(Guid userId, Guid workspaceId, CreateWorkspaceRoleRequest request)
@@ -419,22 +391,22 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             if (permissionIdDublicateCheck)
             {
-                throw new InvalidOperationException("Atanmak istenen izinler arasında tekrar eden izinler bulunuyor.");
+                throw new InvalidOperationException("The selected permissions contain duplicates.");
             }
 
             if (roleNameExists)
             {
-                throw new ConflictException($"'{request.Name}' adında bir rol zaten mevcut.");
+                throw new ConflictException($"A role named '{request.Name}' already exists.");
             }
 
             if (permissionCount != request.PermissionIds.Count)
             {
-                throw new InvalidOperationException("Atanmak istenen izinlerden bazıları geçersiz veya bulunamadı.");
+                throw new InvalidOperationException("One or more selected permissions are invalid or were not found.");
             }
 
             if(containsRestrictedPermissions)
             {
-                throw new InvalidOperationException("Atanmak istenen izinler arasında yasaklı izinler bulunuyor.");
+                throw new InvalidOperationException("The selected permissions include a permission that cannot be assigned.");
             }
 
             var newRole = new WorkspaceRole
@@ -493,22 +465,22 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             if (permissionIdDublicateCheck)
             {
-                throw new InvalidOperationException("Atanmak istenen izinler arasında tekrar eden izinler bulunuyor.");
+                throw new InvalidOperationException("The selected permissions contain duplicates.");
             }
 
             if (roleNameExists)
             {
-                throw new ConflictException($"'{request.Name}' adında bir rol zaten mevcut.");
+                throw new ConflictException($"A role named '{request.Name}' already exists.");
             }
 
             if (permissionCount != request.PermissionIds.Count)
             {
-                throw new InvalidOperationException("Atanmak istenen izinlerden bazıları geçersiz veya bulunamadı.");
+                throw new InvalidOperationException("One or more selected permissions are invalid or were not found.");
             }
 
             if (containsRestrictedPermissions)
             {
-                throw new InvalidOperationException("Atanmak istenen izinler arasında yasaklı izinler bulunuyor.");
+                throw new InvalidOperationException("The selected permissions include a permission that cannot be assigned.");
             }
 
             var updateRole = await _context.WorkspaceRoles
@@ -519,7 +491,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             if(updateRole == null)
             {
-                throw new KeyNotFoundException("Güncellenmek istenen role bulunamadı veya bu çalışma alanına ait değil.");
+                throw new KeyNotFoundException("The role you want to update was not found, or it does not belong to this workspace.");
             }
 
             _context.RemoveRange(updateRole.RolePermissions);
@@ -570,18 +542,46 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             if(roleInfo == null)
             {
-                throw new KeyNotFoundException("Silinmek istenen rol bir sistem rolü veya bu workspace de bulunmamaktadır.");
+                throw new KeyNotFoundException("The role you want to delete is a system role, or it does not belong to this workspace.");
             }
 
             if(roleInfo.UserWorkspaceRoles.Any())
             {
-                throw new InvalidOperationException("silinmek istenen role atanmış kişiler bulunmaktadır.");
+                throw new InvalidOperationException("This role cannot be deleted while members are still assigned to it.");
             }
 
             _context.WorkspaceRoles.Remove(roleInfo);
             await _context.SaveChangesAsync();
 
             return true;
+        }
+
+
+        // ====================================================================================================
+        // Invitations
+        // List, create, cancel, and accept workspace invitations.
+        // ====================================================================================================
+
+        public async Task<List<InvitationSummaryDto>> GetWorkspaceInvitationsAsync(Guid userId, Guid workspaceId)
+        {
+            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Workspace.MemberAdd);
+
+            var invitationList = await _context.Invitations
+                .Where(i => i.WorkspaceId == workspaceId)
+                .Select(i => new InvitationSummaryDto
+                {
+                    Id = i.Id,
+                    Email = i.Email,
+                    RoleName = i.Role.Name,
+                    RoleId = i.RoleId,
+                    Status = i.Status,
+                    Token = i.Token,
+                    ExpiresAt = i.ExpiresAt,
+                    WorkspaceId = i.WorkspaceId
+
+                }).ToListAsync();
+
+            return invitationList;
         }
 
         public async Task<InvitationSummaryDto> CreateInvitationAsync(Guid userId, Guid workspaceId, CreateInvitationRequest request)
@@ -594,7 +594,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             if (assignedRole == null || (assignedRole.WorkspaceId != null && assignedRole.WorkspaceId != workspaceId))
             {
-                throw new KeyNotFoundException("Atanmak istenen rol bulunamadı veya bu çalışma alanı için geçerli değil.");
+                throw new KeyNotFoundException("The selected role was not found, or it is not valid for this workspace.");
             }
 
             var targetUser = await _context.Users
@@ -607,7 +607,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
                 if (isAlreadyMember)
                 {
-                    throw new InvalidOperationException("Bu kullanıcı zaten bu çalışma alanının bir üyesidir.");
+                    throw new InvalidOperationException("This user is already a member of the workspace.");
                 }
             }
 
@@ -616,7 +616,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             
             if(isAlreadyInvited)
             {
-                throw new ConflictException("Bu kişinin daveti bulunmaktadır.");
+                throw new ConflictException("A pending invitation already exists for this email address.");
             }
 
             var invitation = new Invitation
@@ -650,27 +650,6 @@ namespace TaskFlow.WebApi.Infrastructure.Services
                 ExpiresAt = invitation.ExpiresAt
             };
         }
-        public async Task<List<InvitationSummaryDto>> GetWorkspaceInvitationsAsync(Guid userId, Guid workspaceId)
-        {
-            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Workspace.MemberAdd);
-
-            var invitationList = await _context.Invitations
-                .Where(i => i.WorkspaceId == workspaceId)
-                .Select(i => new InvitationSummaryDto
-                {
-                    Id = i.Id,
-                    Email = i.Email,
-                    RoleName = i.Role.Name,
-                    RoleId = i.RoleId,
-                    Status = i.Status,
-                    Token = i.Token,
-                    ExpiresAt = i.ExpiresAt,
-                    WorkspaceId = i.WorkspaceId
-
-                }).ToListAsync();
-
-            return invitationList;
-        }
 
         public async Task<bool> CancelWorkspaceInvitationAsync(Guid userId, Guid workspaceId, Guid invitationId)
         {
@@ -681,10 +660,10 @@ namespace TaskFlow.WebApi.Infrastructure.Services
                 .FirstOrDefaultAsync();
 
             if (invitation == null)
-                throw new KeyNotFoundException("Davet bulunamadı veya bu çalışma alanına ait değil.");
+                throw new KeyNotFoundException("The invitation was not found, or it does not belong to this workspace.");
 
             if (invitation.Status != InvitationStatus.Pending)
-                throw new InvalidOperationException("Beklemede olmayan davet üzerinden iptal işlemi yapılamaz.");
+                throw new InvalidOperationException("Only a pending invitation can be cancelled.");
 
             invitation.Status = InvitationStatus.Cancelled;
 
@@ -700,7 +679,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
                 .FirstOrDefaultAsync();
 
             if (user == null)
-                throw new KeyNotFoundException("Kullanıcı bulunamadı.");
+                throw new KeyNotFoundException("User was not found.");
 
             var invitation = await _context.Invitations
                 .Include(i => i.Role)
@@ -708,27 +687,27 @@ namespace TaskFlow.WebApi.Infrastructure.Services
                 .FirstOrDefaultAsync();
 
             if (invitation == null)
-                throw new KeyNotFoundException("Davet bulunamadı");
+                throw new KeyNotFoundException("Invitation was not found.");
 
             if (invitation.Status != InvitationStatus.Pending)
-                throw new InvalidOperationException("İptal edilmiş veya daha önce kabul edilmiş davet tekrar kabul edilmez.");
+                throw new InvalidOperationException("A cancelled or already accepted invitation cannot be accepted again.");
 
             if(invitation.ExpiresAt < DateTime.UtcNow)
             {
                 invitation.Status = InvitationStatus.Expired;
                 await _context.SaveChangesAsync();
-                throw new InvalidOperationException("Süresi dolmuş davet üzerinde bu işlem yapılamaz.");
+                throw new InvalidOperationException("This invitation has expired and can no longer be accepted.");
             }
 
             if (invitation.Email.Trim().ToLowerInvariant() != user.Email.Trim().ToLowerInvariant())
-                throw new ForbiddenException("Davet edilen kişinin emaili ile istek atılan kişinin emaili arasında uyuşmazlık bulunmaktadır.");
+                throw new ForbiddenException("This invitation was sent to a different email address than the signed-in account.");
 
             var isMember = await _context.UserWorkspaceRoles
                 .Where(uwr => uwr.UserId == userId && uwr.WorkspaceId == invitation.WorkspaceId)
                 .AnyAsync();
 
             if (isMember)
-                throw new InvalidOperationException("Davet edilen kişi bu çalışma alanında zaten üye olarak bulunmaktadır.");
+                throw new InvalidOperationException("You are already a member of this workspace.");
 
             var userWorkspaceRole = new UserWorkspaceRole
             {
@@ -754,5 +733,6 @@ namespace TaskFlow.WebApi.Infrastructure.Services
                 RoleName = invitation.Role.Name
             };
         }
+
     }
 }

@@ -18,6 +18,11 @@ namespace TaskFlow.WebApi.Controllers
             _authService = authService;
         }
 
+        // ====================================================================================================
+        // Account
+        // Register a new account and sign in with email and password.
+        // ====================================================================================================
+
         [HttpPost("register")]
         public async Task<IActionResult> RegisterAsync([FromBody] RegisterRequest request)
         {
@@ -31,6 +36,11 @@ namespace TaskFlow.WebApi.Controllers
             var response = await _authService.LoginAsync(request);
             return Ok(response);
         }
+
+        // ====================================================================================================
+        // Current user
+        // Returns the id, username, and email stored on the access token.
+        // ====================================================================================================
 
         [Authorize]
         [HttpGet("me")]

@@ -21,15 +21,25 @@ namespace TaskFlow.WebApi.Controllers
             _taskItemService = taskItemService;
         }
 
+        // ====================================================================================================
+        // Current user
+        // Reads the signed-in user id from the access token.
+        // ====================================================================================================
+
         private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userIdClaim))
             {
-                throw new UnauthorizedException("Geçersiz veya süresi dolmuş token.");
+                throw new UnauthorizedException("The access token is missing, invalid, or expired.");
             }
             return Guid.Parse(userIdClaim);
         }
+
+        // ====================================================================================================
+        // Queries
+        // Read the signed-in user's tasks, a workspace task list, a summary, and a detail.
+        // ====================================================================================================
 
         [HttpGet]
 
@@ -54,6 +64,7 @@ namespace TaskFlow.WebApi.Controllers
         }
 
         [HttpGet("{workspaceId}/tasks/{taskId}")]
+        [ActionName(nameof(GetTaskByIdAsync))]
         public async Task<IActionResult> GetTaskByIdAsync([FromRoute] Guid workspaceId, [FromRoute] Guid taskId)
         {
             var userId = GetCurrentUserId();
@@ -74,6 +85,10 @@ namespace TaskFlow.WebApi.Controllers
             return Ok(detailedTask);
         }
 
+        // ====================================================================================================
+        // Commands
+        // Create, update, and delete a task.
+        // ====================================================================================================
 
         [HttpPost("{workspaceId}/tasks")]
 
@@ -108,6 +123,11 @@ namespace TaskFlow.WebApi.Controllers
             return NoContent();
         }
 
+        // ====================================================================================================
+        // Assignment and schedule
+        // Assign or clear the assignee, and change the deadline or status.
+        // ====================================================================================================
+
         [HttpPatch("{workspaceId}/tasks/{taskId}/assign")]
 
         public async Task<IActionResult> AssignUserToTaskAsync([FromRoute] Guid workspaceId, [FromRoute] Guid taskId, [FromBody] AssignUserToTaskRequest request)
@@ -117,6 +137,17 @@ namespace TaskFlow.WebApi.Controllers
             var assignedTask = await _taskItemService.AssignUserToTaskAsync(userId, workspaceId, taskId, request);
 
             return Ok(assignedTask);
+        }
+
+        [HttpPatch("{workspaceId}/tasks/{taskId}/unassign")]
+
+        public async Task<IActionResult> UnassignFromTaskAsync([FromRoute] Guid workspaceId, [FromRoute] Guid taskId)
+        {
+            var userId = GetCurrentUserId();
+
+            var unassignedTask = await _taskItemService.UnassignFromTaskAsync(userId, workspaceId, taskId);
+
+            return Ok(unassignedTask);
         }
 
         [HttpPatch("{workspaceId}/tasks/{taskId}/deadline")]
@@ -139,17 +170,6 @@ namespace TaskFlow.WebApi.Controllers
             var updatedTask = await _taskItemService.UpdateTaskStatusAsync(userId, workspaceId, taskId, request);
 
             return Ok(updatedTask);
-        }
-
-        [HttpPatch("{workspaceId}/tasks/{taskId}/unassign")]
-
-        public async Task<IActionResult> UnassignFromTaskAsync([FromRoute] Guid workspaceId, [FromRoute] Guid taskId)
-        {
-            var userId = GetCurrentUserId();
-
-            var unassignedTask = await _taskItemService.UnassignFromTaskAsync(userId, workspaceId, taskId);
-
-            return Ok(unassignedTask);
         }
 
     }

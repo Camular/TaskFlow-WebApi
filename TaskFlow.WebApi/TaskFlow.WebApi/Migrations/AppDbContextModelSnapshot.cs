@@ -98,176 +98,204 @@ namespace TaskFlow.WebApi.Migrations
                         {
                             Id = new Guid("af49de62-068e-467e-8f17-9ba4ccf33473"),
                             Code = "taskitem.create",
-                            Description = "Grup içindeki görevleri oluşturma yetkisi."
+                            Description = "Create tasks in the workspace."
                         },
                         new
                         {
                             Id = new Guid("07a67e69-1d76-4ba4-a644-f04863a29c90"),
                             Code = "taskitem.read",
-                            Description = "Grup içindeki görevleri görüntüleme yetkisi."
+                            Description = "View tasks in the workspace."
                         },
                         new
                         {
                             Id = new Guid("a2a7e721-5dc3-403a-bdd5-628887602839"),
                             Code = "taskitem.update",
-                            Description = "Grup içindeki görevleri güncelleme yetkisi."
+                            Description = "Update tasks in the workspace."
                         },
                         new
                         {
                             Id = new Guid("753469fe-c14a-4e8a-914e-786f3e78322d"),
                             Code = "taskitem.delete",
-                            Description = "Grup içindeki görevleri silme yetkisi."
+                            Description = "Delete tasks in the workspace."
                         },
                         new
                         {
                             Id = new Guid("365ccfa9-d0ce-4a7a-8e07-a7eaa4238474"),
                             Code = "taskitem.status.update",
-                            Description = "Grup içindeki görevlerin durumunu güncelleme yetkisi."
+                            Description = "Update the status of tasks in the workspace."
                         },
                         new
                         {
                             Id = new Guid("912c74bc-4f5c-4f1c-8753-05cfad084bfd"),
                             Code = "taskitem.deadline.update",
-                            Description = "Grup içindeki görevlerin son teslim tarihini güncelleme yetkisi."
+                            Description = "Update task deadlines in the workspace."
                         },
                         new
                         {
                             Id = new Guid("5193bc28-ea67-43d7-a105-7026d2d668e3"),
                             Code = "taskitem.assign",
-                            Description = "Grup içindeki görevleri atama yetkisi."
+                            Description = "Assign tasks in the workspace."
                         },
                         new
                         {
                             Id = new Guid("8c9a2c14-6516-493e-9b21-56c113a86c13"),
                             Code = "workspace.view",
-                            Description = "Çalışma alanını ve genel özet ekranını görüntüleme yetkisi."
+                            Description = "View the workspace and its summary."
                         },
                         new
                         {
                             Id = new Guid("02b08e56-e99f-4ef3-a99e-8ec70754194f"),
                             Code = "workspace.member.add",
-                            Description = "Çalışma alanına yeni takım arkadaşı/üye davet etme yetkisi."
+                            Description = "Invite a member to the workspace."
                         },
                         new
                         {
                             Id = new Guid("953cd531-6149-4e63-bd5d-862f41053d32"),
                             Code = "workspace.member.remove",
-                            Description = "Çalışma alanından mevcut bir üyeyi tamamen çıkarma yetkisi."
+                            Description = "Remove a member from the workspace."
                         },
                         new
                         {
                             Id = new Guid("601059f0-0212-498f-9bf4-cdee28e4ba2c"),
                             Code = "workspace.role.assign",
-                            Description = "Çalışma alanındaki üyelere rol (Admin, Member vb.) atama ve değiştirme yetkisi."
+                            Description = "Assign and change member roles in the workspace."
                         },
                         new
                         {
                             Id = new Guid("6b08ed62-b54e-41b5-8f10-0e52062150df"),
                             Code = "workspace.role.create",
-                            Description = "Çalışma alanına özel (Custom Role) yeni roller tanımlama yetkisi."
+                            Description = "Create custom roles for the workspace."
                         },
                         new
                         {
                             Id = new Guid("0592df3c-6b6b-4b1d-bff2-5d779755a890"),
                             Code = "workspace.role.update",
-                            Description = "Çalışma alanına özel tanımlanmış rollerin yetki matrisini güncelleme yetkisi."
+                            Description = "Update the permission set of a custom workspace role."
                         },
                         new
                         {
                             Id = new Guid("e885fd39-00d9-4a16-b94b-bcf65b60845b"),
                             Code = "workspace.role.delete",
-                            Description = "Çalışma alanına özel oluşturulmuş rolleri tamamen silme yetkisi."
+                            Description = "Delete a custom role from the workspace."
                         },
                         new
                         {
                             Id = new Guid("de5201a9-501f-4b61-9bb5-afd6e7342c1a"),
                             Code = "workspace.update",
-                            Description = "Çalışma alanının ismini, açıklamasını ve kurumsal genel ayarlarını düzenleme yetkisi."
+                            Description = "Update the workspace name, description, and settings."
                         },
                         new
                         {
                             Id = new Guid("1a7b0835-2203-4305-b9bc-17633440d35c"),
                             Code = "workspace.delete",
-                            Description = "Çalışma alanını (Workspace) tüm verileriyle birlikte kalıcı olarak silme yetkisi."
+                            Description = "Permanently delete the workspace and its data."
                         },
                         new
                         {
                             Id = new Guid("23c879f0-49ca-402a-9610-574677f4f70d"),
                             Code = "activitylog.read",
-                            Description = "Activity logları görüntüleme yetkisi."
+                            Description = "View activity logs."
                         },
                         new
                         {
                             Id = new Guid("93ecadf9-ce30-4843-ad61-236d39e7184b"),
                             Code = "comments.create",
-                            Description = "Görevler için yorum oluşturma yetkisi."
+                            Description = "Create comments on tasks."
                         },
                         new
                         {
                             Id = new Guid("11afb428-b2d3-40d3-8008-b5c7aecba8b4"),
                             Code = "comments.read",
-                            Description = "Görevler için yorumları görüntüleme yetkisi."
+                            Description = "View comments on tasks."
                         },
                         new
                         {
                             Id = new Guid("cd0c59f8-ab0f-45cc-97bc-98c6ac13344f"),
                             Code = "comments.update",
-                            Description = "Görevler için yorumları güncelleme yetkisi."
+                            Description = "Update comments on tasks."
                         },
                         new
                         {
                             Id = new Guid("31e13039-cb2f-497c-8fb9-1d98d480aa96"),
                             Code = "comments.delete",
-                            Description = "Görevler için yorumları silme yetkisi."
+                            Description = "Delete comments on tasks."
                         },
                         new
                         {
                             Id = new Guid("6151859b-1c5c-4bd3-8202-656c02ae189d"),
                             Code = "projects.create",
-                            Description = "Çalışma alanı altında yeni panolar/projeler oluşturma yetkisi."
+                            Description = "Create projects in the workspace."
                         },
                         new
                         {
                             Id = new Guid("66f5f8bc-a5cf-4851-8c01-79dd50cfa4b6"),
                             Code = "projects.read",
-                            Description = "Mevcut projeleri, pano listelerini ve proje detaylarını görüntüleme yetkisi."
+                            Description = "View projects and their details."
                         },
                         new
                         {
                             Id = new Guid("f5a6d297-a279-4563-967a-f8cd37af9732"),
                             Code = "projects.update",
-                            Description = "Mevcut projelerin isim, renk, kategori ve temel ayarlarını düzenleme yetkisi."
+                            Description = "Update a project's name, color, category, and settings."
                         },
                         new
                         {
                             Id = new Guid("d5f4d12d-1533-4143-98f3-ef0f9d4c92ed"),
                             Code = "projects.delete",
-                            Description = "Bir projeyi/panoyu içindeki tüm görevlerle birlikte kalıcı olarak silme yetkisi."
+                            Description = "Permanently delete a project and its tasks."
                         },
                         new
                         {
                             Id = new Guid("b1caed1d-4b83-47d2-839d-dc5a9b9b3617"),
                             Code = "attachments.create",
-                            Description = "Görevler için dosya ekleme yetkisi."
+                            Description = "Add files to tasks."
                         },
                         new
                         {
                             Id = new Guid("b0670926-df3f-41e3-a5d8-9a2cb70967e7"),
                             Code = "attachments.read",
-                            Description = "Görevler için dosyaları görüntüleme yetkisi."
+                            Description = "View files attached to tasks."
                         },
                         new
                         {
                             Id = new Guid("c3e756b7-e7c8-4373-8741-a3328e5413dd"),
                             Code = "attachments.delete",
-                            Description = "Görevler için dosyaları silme yetkisi."
+                            Description = "Delete files attached to tasks."
                         },
                         new
                         {
                             Id = new Guid("ffc869ed-7030-4d5a-9eab-9957d13efe8c"),
                             Code = "attachments.update",
-                            Description = "Görevler için dosyaları güncelleme yetkisi."
+                            Description = "Update files attached to tasks."
                         });
+                });
+
+            modelBuilder.Entity("TaskFlow.WebApi.Core.Entities.Project", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkspaceId");
+
+                    b.ToTable("Projects");
                 });
 
             modelBuilder.Entity("TaskFlow.WebApi.Core.Entities.RolePermission", b =>
@@ -856,6 +884,17 @@ namespace TaskFlow.WebApi.Migrations
                     b.Navigation("InvitedBy");
 
                     b.Navigation("Role");
+
+                    b.Navigation("Workspace");
+                });
+
+            modelBuilder.Entity("TaskFlow.WebApi.Core.Entities.Project", b =>
+                {
+                    b.HasOne("TaskFlow.WebApi.Core.Entities.Workspace", "Workspace")
+                        .WithMany()
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Workspace");
                 });

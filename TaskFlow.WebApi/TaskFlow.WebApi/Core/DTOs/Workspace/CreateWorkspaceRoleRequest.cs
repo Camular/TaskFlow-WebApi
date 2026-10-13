@@ -4,12 +4,12 @@ namespace TaskFlow.WebApi.Core.DTOs.Workspace
 {
     public class CreateWorkspaceRoleRequest
     {
-        [Required(ErrorMessage = "Rol adı boş bırakılamaz.")]
-        [StringLength(50, ErrorMessage = "Rol adı en fazla 50 karakter olabilir.")]
+        [Required(ErrorMessage = "Role name is required.")]
+        [StringLength(50, ErrorMessage = "Role name cannot be longer than 50 characters.")]
         public required string Name { get; set; }
 
-        [Required(ErrorMessage = "En az bir izin seçilmelidir.")]
-        [MinLength(1, ErrorMessage = "En az bir izin seçilmelidir.")]
+        [Required(ErrorMessage = "Select at least one permission.")]
+        [MinLength(1, ErrorMessage = "Select at least one permission.")]
         public required List<Guid> PermissionIds { get; set; } = new List<Guid>();
     }
 }

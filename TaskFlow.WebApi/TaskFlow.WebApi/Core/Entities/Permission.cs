@@ -6,6 +6,6 @@
         public required string Code { get; set; }
         public required string Description { get; set; }
 
-        // ICollection  yok çünkü "Bana 'taskitem.create' iznini getir ve bu izne sahip olan tüm rolleri listele" isteğinde bulunmıcaz.
+        // No collection navigation. Callers load a permission by code; they do not list every role that has it.
     }
 }

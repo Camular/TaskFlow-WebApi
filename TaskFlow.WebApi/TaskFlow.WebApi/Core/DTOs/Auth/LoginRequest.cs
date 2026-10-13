@@ -6,8 +6,8 @@ namespace TaskFlow.WebApi.Core.DTOs.Auth
     {
         [StringLength(100)]
         [EmailAddress(ErrorMessage = "Invalid email address")]
-        [Required(ErrorMessage = "Email is required")] //burdaki required ASP.NET Core Framework kuralıdır.
-        public required string Email { get; set; } //burdaki required C# Derleyicisinin (Compiler) kuralıdır.
+        [Required(ErrorMessage = "Email is required")] // Required by ASP.NET Core model validation.
+        public required string Email { get; set; } // Required by the C# compiler so the property must be set.
 
         [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters long")]
         [Required(ErrorMessage = "Password is required")]

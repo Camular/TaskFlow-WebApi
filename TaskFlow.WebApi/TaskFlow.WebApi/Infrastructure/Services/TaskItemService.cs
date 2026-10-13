@@ -19,7 +19,10 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             _context = context;
         }
 
-        #region Projections & Mapping Helpers
+        // ====================================================================================================
+        // Mapping
+        // Maps a task row to a summary or detail response.
+        // ====================================================================================================
 
         private static readonly Expression<Func<TaskItem, TaskSummaryDto>> AsTaskSummaryDto = t => new TaskSummaryDto
         {
@@ -54,9 +57,10 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             WorkspaceId = task.WorkspaceId
         };
 
-        #endregion
-
-        #region Helper Methods
+        // ====================================================================================================
+        // Guards
+        // Shared workspace access check and task lookup used by the actions below.
+        // ====================================================================================================
 
         private async Task CheckWorkspacePermissionAsync(Guid userId, Guid workspaceId, string permissionCode)
         {
@@ -66,7 +70,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             if (!isMember)
             {
-                throw new KeyNotFoundException("Çalışma alanı bulunamadı veya bu çalışma alanına erişim izniniz yok.");
+                throw new KeyNotFoundException("Workspace was not found, or you do not have access to it.");
             }
 
             var hasPermission = await _context.UserWorkspaceRoles
@@ -77,7 +81,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             if (!hasPermission)
             {
-                throw new ForbiddenException($"Bu işlemi gerçekleştirmek için '{permissionCode}' yetkiniz bulunmamaktadır.");
+                throw new ForbiddenException($"You do not have the '{permissionCode}' permission required for this operation.");
             }
         }
 
@@ -88,13 +92,17 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             if (taskItem == null)
             {
-                throw new KeyNotFoundException("İşlem yapmak istediğiniz Task bulunamadı ya da bulunduğunuz çalışma alanında yer almıyor.");
+                throw new KeyNotFoundException("The task was not found in this workspace.");
             }
 
             return taskItem;
         }
 
-        #endregion
+
+        // ====================================================================================================
+        // Queries
+        // Read task lists, a task summary, and a task detail.
+        // ====================================================================================================
 
         public async Task<List<TaskSummaryDto>> GetUserTaskSummaryAsync(Guid userId)
         {
@@ -117,24 +125,6 @@ namespace TaskFlow.WebApi.Infrastructure.Services
                 .ToListAsync();
         }
 
-        public async Task<TaskDetailDto> GetTaskDetailAsync(Guid userId, Guid workspaceId, Guid taskId)
-        {
-            await CheckWorkspacePermissionAsync(userId, workspaceId, SystemPermissions.TaskItem.Read);
-
-            var taskSummary = await _context.TaskItems
-                .AsNoTracking()
-                .Where(t => t.WorkspaceId == workspaceId && t.Id == taskId)
-                .Select(AsTaskDetailDto)
-                .FirstOrDefaultAsync();
-
-            if (taskSummary == null)
-            {
-                throw new KeyNotFoundException("Görüntülemek istediğiniz Task bulunamadı ya da bulunduğunuz çalışma alanında bulunmamakta.");
-            }
-
-            return taskSummary;
-        }
-
         public async Task<TaskSummaryDto> GetTaskByIdAsync(Guid userId, Guid workspaceId, Guid taskId)
         {
             await CheckWorkspacePermissionAsync(userId, workspaceId, SystemPermissions.TaskItem.Read);
@@ -147,11 +137,35 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             if (taskSummary == null)
             {
-                throw new KeyNotFoundException("Görüntülemek istediğiniz Task bulunamadı ya da bulunduğunuz çalışma alanında bulunmamakta.");
+                throw new KeyNotFoundException("The task was not found in this workspace.");
             }
 
             return taskSummary;
         }
+
+        public async Task<TaskDetailDto> GetTaskDetailAsync(Guid userId, Guid workspaceId, Guid taskId)
+        {
+            await CheckWorkspacePermissionAsync(userId, workspaceId, SystemPermissions.TaskItem.Read);
+
+            var taskSummary = await _context.TaskItems
+                .AsNoTracking()
+                .Where(t => t.WorkspaceId == workspaceId && t.Id == taskId)
+                .Select(AsTaskDetailDto)
+                .FirstOrDefaultAsync();
+
+            if (taskSummary == null)
+            {
+                throw new KeyNotFoundException("The task was not found in this workspace.");
+            }
+
+            return taskSummary;
+        }
+
+
+        // ====================================================================================================
+        // Commands
+        // Create, update, and delete a task.
+        // ====================================================================================================
 
         public async Task<TaskSummaryDto> CreateTaskAsync(Guid userId, Guid workspaceId, CreateTaskRequest request)
         {
@@ -205,6 +219,12 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             return true;
         }
 
+
+        // ====================================================================================================
+        // Assignment and schedule
+        // Assign or clear the assignee, and change the deadline or status.
+        // ====================================================================================================
+
         public async Task<TaskSummaryDto> AssignUserToTaskAsync(Guid requesterUserId, Guid workspaceId, Guid taskId, AssignUserToTaskRequest request)
         {
             await CheckWorkspacePermissionAsync(requesterUserId, workspaceId, SystemPermissions.TaskItem.Assign);
@@ -219,7 +239,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             if (targetUser == null)
             {
-                throw new KeyNotFoundException("Eklenmek istenen e-posta adresine sahip bir kullanıcı bulunamadı.");
+                throw new KeyNotFoundException("No user was found for the supplied email address.");
             }
 
             var isMember = await _context.UserWorkspaceRoles
@@ -228,7 +248,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             if (!isMember)
             {
-                throw new InvalidOperationException("Atamak istediğiniz kişi bu çalışma alanında bulunmamaktadır.");
+                throw new InvalidOperationException("The user you want to assign is not a member of this workspace.");
             }
 
             taskItem.AssignedUserId = targetUser.Id;
@@ -236,6 +256,20 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             await _context.SaveChangesAsync();
 
             return MapToTaskSummaryDto(taskItem);
+        }
+
+        public async Task<TaskSummaryDto> UnassignFromTaskAsync(Guid userId, Guid workspaceId, Guid taskId)
+        {
+            await CheckWorkspacePermissionAsync(userId, workspaceId, SystemPermissions.TaskItem.Assign);
+
+            var taskItem = await GetTaskInWorkspaceAsync(workspaceId, taskId);
+
+            taskItem.AssignedUserId = null;
+
+            await _context.SaveChangesAsync();
+
+            return MapToTaskSummaryDto(taskItem);
+
         }
 
         public async Task<TaskSummaryDto> UpdateTaskDeadlineAsync(Guid userId, Guid workspaceId, Guid taskId, UpdateTaskDeadlineRequest request)
@@ -246,12 +280,12 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             if (taskItem.Status == TaskStatus.Done || taskItem.Status == TaskStatus.Failed)
             {
-                throw new InvalidOperationException("Tamamlanmış veya iptal edilmiş görevlerin son teslim tarihi değiştirilemez.");
+                throw new InvalidOperationException("The deadline of a completed or failed task cannot be changed.");
             }
 
             if (request.Deadline.HasValue && request.Deadline.Value < taskItem.CreatedAt)
             {
-                throw new InvalidOperationException("Son teslim tarihi, görevin oluşturulma tarihinden daha eski bir tarih olamaz.");
+                throw new InvalidOperationException("The deadline cannot be earlier than the date the task was created.");
             }
 
             taskItem.Deadline = request.Deadline.HasValue
@@ -274,20 +308,6 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             await _context.SaveChangesAsync();
 
             return MapToTaskSummaryDto(taskItem);
-        }
-
-        public async Task<TaskSummaryDto> UnassignFromTaskAsync(Guid userId, Guid workspaceId, Guid taskId)
-        {
-            await CheckWorkspacePermissionAsync(userId, workspaceId, SystemPermissions.TaskItem.Assign);
-
-            var taskItem = await GetTaskInWorkspaceAsync(workspaceId, taskId);
-
-            taskItem.AssignedUserId = null;
-
-            await _context.SaveChangesAsync();
-
-            return MapToTaskSummaryDto(taskItem);
-
         }
 
     }
