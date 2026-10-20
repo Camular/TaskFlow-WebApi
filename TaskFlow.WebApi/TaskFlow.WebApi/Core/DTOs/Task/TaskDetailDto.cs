@@ -11,6 +11,9 @@ namespace TaskFlow.WebApi.Core.DTOs.Task
         public required DateTime CreatedAt { get; set; }
         public required DateTime? Deadline { get; set; }
         public Guid WorkspaceId { get; set; }
+        public Guid? ProjectId { get; set; }
+        public int? Number { get; set; }
+        public string? Code { get; set; }
         public Guid? AssignedUserId { get; set; }
         public bool IsOverdue => Deadline.HasValue
                           && Deadline.Value < DateTime.UtcNow

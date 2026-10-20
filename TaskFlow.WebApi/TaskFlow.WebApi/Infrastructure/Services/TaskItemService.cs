@@ -1,10 +1,12 @@
-﻿using System.Linq.Expressions;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 using TaskFlow.WebApi.Core.Authorization;
 using TaskFlow.WebApi.Core.DTOs.Task;
+using TaskFlow.WebApi.Core.Entities;
 using TaskFlow.WebApi.Core.Exceptions;
 using TaskFlow.WebApi.Core.Interfaces;
 using TaskFlow.WebApi.Infrastructure.Data;
+using static TaskFlow.WebApi.Core.Authorization.SystemPermissions;
 using TaskItem = TaskFlow.WebApi.Core.Entities.TaskItem;
 using TaskStatus = TaskFlow.WebApi.Core.Entities.TaskStatus;
 
@@ -32,7 +34,10 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             CreatedAt = t.CreatedAt,
             Deadline = t.Deadline,
             AssignedUserId = t.AssignedUserId,
-            WorkspaceId = t.WorkspaceId
+            WorkspaceId = t.WorkspaceId,
+            ProjectId = t.ProjectId,
+            Number = t.Number,
+            Code = (t.Number != null && t.Project != null && t.Project.Key != null) ? t.Project.Key + "-" + t.Number : null
         };
 
         private static readonly Expression<Func<TaskItem, TaskDetailDto>> AsTaskDetailDto = t => new TaskDetailDto
@@ -44,7 +49,10 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             CreatedAt = t.CreatedAt,
             Deadline = t.Deadline,
             AssignedUserId = t.AssignedUserId,
-            WorkspaceId = t.WorkspaceId
+            WorkspaceId = t.WorkspaceId,
+            ProjectId = t.ProjectId,
+            Number = t.Number,
+            Code = (t.Number != null && t.Project != null && t.Project.Key != null) ? t.Project.Key + "-" + t.Number : null
         };
         private static TaskSummaryDto MapToTaskSummaryDto(TaskItem task) => new()
         {
@@ -54,7 +62,10 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             CreatedAt = task.CreatedAt,
             Deadline = task.Deadline,
             AssignedUserId = task.AssignedUserId,
-            WorkspaceId = task.WorkspaceId
+            WorkspaceId = task.WorkspaceId,
+            ProjectId = task.ProjectId,
+            Number = task.Number,
+            Code = (task.Number != null && task.Project != null && task.Project.Key != null) ? task.Project.Key + "-" + task.Number : null
         };
 
         // ====================================================================================================
@@ -171,6 +182,30 @@ namespace TaskFlow.WebApi.Infrastructure.Services
         {
             await CheckWorkspacePermissionAsync(userId, workspaceId, SystemPermissions.TaskItem.Create);
 
+            Project? project = null;
+
+            int? taskNumber = null;
+
+            if (request.ProjectId != null)
+            {
+                project = await _context.Projects
+                    .FirstOrDefaultAsync(p => p.Id == request.ProjectId && p.WorkspaceId == workspaceId);
+
+                if (project == null)
+                    throw new KeyNotFoundException("The project was not found in this workspace.");
+
+                if (project.Key == null)
+                    throw new InvalidOperationException("This project does not have a key.");
+
+                var number = await _context.TaskItems
+                    .Where(t => t.ProjectId == request.ProjectId)
+                    .OrderByDescending(t => t.Number)
+                    .Select(t => t.Number)
+                    .FirstOrDefaultAsync();
+
+                taskNumber = (number ?? 0) + 1;
+            }
+
             var taskItem = new TaskItem
             {
                 Id = Guid.NewGuid(),
@@ -184,13 +219,23 @@ namespace TaskFlow.WebApi.Infrastructure.Services
                 WorkspaceId = workspaceId,
                 AssignedUserId = null,
                 Workspace = null!,
-                AssignedUser = null!
+                AssignedUser = null!,
+                ProjectId = request.ProjectId,
+                Project = null,
+                Number = taskNumber
             };
 
             _context.TaskItems.Add(taskItem);
             await _context.SaveChangesAsync();
 
-            return MapToTaskSummaryDto(taskItem);
+            var dto = MapToTaskSummaryDto(taskItem);
+
+            if (project != null && taskNumber != null)
+            {
+                dto.Code = project.Key + "-" + taskNumber;
+            }
+
+            return dto;
         }
 
         public async Task<TaskSummaryDto> UpdateTaskAsync(Guid userId, Guid workspaceId, Guid taskId, UpdateTaskRequest request)
@@ -199,12 +244,57 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             var taskItem = await GetTaskInWorkspaceAsync(workspaceId, taskId);
 
+            Project? project = null;
+
+            if (request.ProjectId != taskItem.ProjectId)
+            {
+                if (request.ProjectId == null)
+                {
+                    taskItem.Number = null;
+                }
+                else
+                {
+                    project = await _context.Projects
+                        .FirstOrDefaultAsync(p => p.Id == request.ProjectId && p.WorkspaceId == workspaceId);
+
+                    if (project == null)
+                        throw new KeyNotFoundException("The project was not found in this workspace.");
+
+                    if (project.Key == null)
+                        throw new InvalidOperationException("This project does not have a key.");
+
+                    var number = await _context.TaskItems
+                        .Where(t => t.ProjectId == request.ProjectId)
+                        .OrderByDescending(t => t.Number)
+                        .Select(t => t.Number)
+                        .FirstOrDefaultAsync();
+
+                    taskItem.Number = (number ?? 0) + 1;
+                }
+            }
+            else
+            {
+                if (taskItem.ProjectId != null)
+                {
+                    project = await _context.Projects
+                        .FirstOrDefaultAsync(p => p.Id == taskItem.ProjectId && p.WorkspaceId == workspaceId);
+                }
+            }
+
             taskItem.Title = request.Title;
             taskItem.Description = request.Description;
+            taskItem.ProjectId = request.ProjectId;
 
             await _context.SaveChangesAsync();
 
-            return MapToTaskSummaryDto(taskItem);
+            var dto = MapToTaskSummaryDto(taskItem);
+
+            if (taskItem.Number != null && project?.Key != null)
+            {
+                dto.Code = project.Key + "-" + taskItem.Number;
+            }
+
+            return dto;
         }
 
         public async Task<bool> DeleteTaskAsync(Guid userId, Guid workspaceId, Guid taskId)

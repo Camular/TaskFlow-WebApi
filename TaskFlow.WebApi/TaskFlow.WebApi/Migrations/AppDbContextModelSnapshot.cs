@@ -283,6 +283,10 @@ namespace TaskFlow.WebApi.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<string>("Key")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -709,6 +713,12 @@ namespace TaskFlow.WebApi.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
 
+                    b.Property<int?>("Number")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -723,6 +733,8 @@ namespace TaskFlow.WebApi.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AssignedUserId");
+
+                    b.HasIndex("ProjectId");
 
                     b.HasIndex("WorkspaceId");
 
@@ -925,6 +937,11 @@ namespace TaskFlow.WebApi.Migrations
                         .HasForeignKey("AssignedUserId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("TaskFlow.WebApi.Core.Entities.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("TaskFlow.WebApi.Core.Entities.Workspace", "Workspace")
                         .WithMany("TaskItems")
                         .HasForeignKey("WorkspaceId")
@@ -932,6 +949,8 @@ namespace TaskFlow.WebApi.Migrations
                         .IsRequired();
 
                     b.Navigation("AssignedUser");
+
+                    b.Navigation("Project");
 
                     b.Navigation("Workspace");
                 });

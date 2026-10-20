@@ -13,6 +13,8 @@ namespace TaskFlow.WebApi.Infrastructure.Data.Configurations
 
             builder.Property(p => p.Name).HasMaxLength(100).IsRequired();
 
+            builder.Property(p => p.Key).HasMaxLength(10);
+
             builder.Property(p => p.Description).HasMaxLength(500);
 
             builder.Property(p => p.CreatedAt)

@@ -12,5 +12,6 @@ namespace TaskFlow.WebApi.Core.DTOs.Task
         [StringLength(500, ErrorMessage = "Description cannot be longer than 500 characters.")]
         public string? Description { get; set; }
         public DateTime? Deadline { get; set; }
+        public Guid? ProjectId { get; set; }
     }
 }

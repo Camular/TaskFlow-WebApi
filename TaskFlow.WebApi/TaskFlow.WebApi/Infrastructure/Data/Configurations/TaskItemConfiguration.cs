@@ -26,6 +26,11 @@ namespace TaskFlow.WebApi.Infrastructure.Data.Configurations
                 .WithMany(u => u.AssignedTaskItems)
                 .HasForeignKey(t => t.AssignedUserId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            builder.HasOne(t => t.Project)
+                .WithMany()
+                .HasForeignKey(t => t.ProjectId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

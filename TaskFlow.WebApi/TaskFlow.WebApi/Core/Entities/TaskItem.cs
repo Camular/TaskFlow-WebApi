@@ -9,6 +9,9 @@
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? Deadline { get; set; }
         public Guid WorkspaceId { get; set; }
+        public Guid? ProjectId { get; set; }
+        public int? Number { get; set; }
+        public Project? Project { get; set; }
         public Guid? AssignedUserId { get; set; }
         public required Workspace Workspace { get; set; }
         public User? AssignedUser { get; set; }

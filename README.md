@@ -11,8 +11,8 @@ This repository contains the **backend** of TaskFlow (polyrepo). The API focuses
 - **Members:** List members, change roles, remove members, last-owner safeguards. New members join by accepting an invitation.
 - **Invitations:** Invite by email, list, cancel, and accept with a token. Membership is created only when the invited account accepts. No outbound email yet; the token is returned by the API for testing.
 - **RBAC:** System roles (Owner, Administrator, Member, Viewer) plus workspace-scoped custom roles with permission assignment (create, update, delete)
-- **Projects:** Create, list, get, update, and delete projects inside a workspace (`projects.create`, `projects.read`, `projects.update`, `projects.delete`)
-- **Tasks:** Workspace and personal task lists, create / update / delete, assign / unassign, status and deadline updates, summary vs detail DTOs
+- **Projects:** Create, list, get, update, and delete projects inside a workspace (`projects.create`, `projects.read`, `projects.update`, `projects.delete`). Each project has a short `Key` used in task codes.
+- **Tasks:** Workspace and personal task lists, create / update / delete, assign / unassign, status and deadline updates, summary vs detail DTOs. A task may link to a project; linked tasks get a per-project `Number` and a response `Code` such as `API-1`.
 - **Cross-cutting:** Global exception middleware (401 / 403 / 404 / 400 / 409), EF Core + PostgreSQL, Docker Compose for local database
 
 ## Tech stack
@@ -108,9 +108,9 @@ Protected endpoints need `Authorization: Bearer <token>`.
 
 ## Status / roadmap
 
-Implemented: auth, workspaces, members, custom roles (create / list / get / update / delete), invitations (create / list / cancel / accept), projects (create / list / get / update / delete), task API (detail + unassign).
+Implemented: auth, workspaces, members, custom roles (create / list / get / update / delete), invitations (create / list / cancel / accept), projects (CRUD + key), task API (detail + unassign), task–project link with number and code.
 
-Next: task codes and linking a task to a project, then comments and attachments. Production hardening (rate limiting, hosting) comes later. Outbound invitation email is not implemented.
+Next: `CreatedBy` on tasks, then comments and attachments. Production hardening (rate limiting, hosting) comes later. Outbound invitation email is not implemented.
 
 ## Manual API coverage (7 Oct 2026)
 
@@ -123,6 +123,7 @@ Checked over HTTPS against a local API. Re-run this set before a large portfolio
 - Roles: create, list, get by id, update keeping the same name, name clash 409, block `workspace.delete` on a custom role, block update/delete of system roles, block delete while the role is assigned, viewer 403, outsider 404
 - Tasks: list mine and workspace tasks, get summary and detail, create 201 with a location URL, update, status, invalid status 400, deadline, assign a member, block assign of a non-member, unassign, delete, outsider 404, viewer can read and cannot create
 - Projects (13 Oct 2026): empty list 200, create 201 with `Location`, list ordered by `CreatedAt`, get by id 200, missing project 404, same name with different letter case 409, empty or too-long name 400, too-long description 400, update keeping or changing the same name 200, name clash 409, clear description 200, delete 204, delete again 404, get after delete 404. No token 401. Unknown workspace or a non-member 404. A project id from another workspace 404. Member and Viewer can read and cannot create, update, or delete (403). Administrator can create, update, and delete. A name that looks like SQL is stored as text; the project list still returns 200.
+- Task–project link and codes (20 Oct 2026): create project with `key` 201. Task without a project keeps `projectId`, `number`, and `code` empty. First linked task returns `number=1` and `code=API-1`; second returns `API-2`. Unknown project on create 404. Get and detail return the same code. Update that keeps the same project keeps the number. Move to another project assigns a new number (`WEB-1`). Clear `projectId` clears number and code. Delete project sets the task `projectId` to null (`SetNull`); the task row remains.
 
 ## License
 

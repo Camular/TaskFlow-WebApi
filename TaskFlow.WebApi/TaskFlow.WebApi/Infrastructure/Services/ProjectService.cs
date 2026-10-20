@@ -66,6 +66,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
                 {
                     Id = p.Id,
                     Name = p.Name,
+                    Key = p.Key,
                     CreatedAt = p.CreatedAt,
                     Description = p.Description,
                     WorkspaceId = p.WorkspaceId
@@ -90,6 +91,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
                 Id = project.Id,
                 WorkspaceId = project.WorkspaceId,
                 Name = project.Name,
+                Key = project.Key,
                 Description = project.Description,
                 CreatedAt = project.CreatedAt
             };
@@ -113,10 +115,19 @@ namespace TaskFlow.WebApi.Infrastructure.Services
                 throw new ConflictException($"A project named '{request.Name}' already exists in this workspace.");
             }
 
+            var projectKeyExists = await _context.Projects
+                .AnyAsync(p => p.WorkspaceId == workspaceId && p.Key != null && p.Key.ToLower() == request.Key.ToLower());
+
+            if (projectKeyExists)
+            {
+                throw new ConflictException($"A project key '{request.Key}' already exists in this workspace.");
+            }
+
             var newProject = new Project
             {
                 Id = Guid.NewGuid(),
                 Name = request.Name,
+                Key = request.Key,
                 Description = request.Description,
                 WorkspaceId = workspaceId,
                 CreatedAt = DateTime.UtcNow,
@@ -130,6 +141,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             {
                 Id = newProject.Id,
                 Name = newProject.Name,
+                Key = newProject.Key,
                 Description = newProject.Description,
                 WorkspaceId = newProject.WorkspaceId,
                 CreatedAt = newProject.CreatedAt
@@ -155,8 +167,17 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             if (isNameExists)  
                 throw new ConflictException($"A project named '{request.Name}' already exists in this workspace.");
 
+            var projectKeyExists = await _context.Projects
+                .AnyAsync(p => p.WorkspaceId == workspaceId && p.Key != null && p.Key.ToLower() == request.Key.ToLower() && p.Id != projectId);
+
+            if (projectKeyExists)
+            {
+                throw new ConflictException($"A project key '{request.Key}' already exists in this workspace.");
+            }
+
             project.Name = request.Name;
             project.Description = request.Description;
+            project.Key = request.Key;
 
             await _context.SaveChangesAsync();
 
@@ -164,6 +185,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             {
                 Id = project.Id,
                 Name = project.Name,
+                Key = project.Key,
                 Description = project.Description,
                 CreatedAt = project.CreatedAt,
                 WorkspaceId = project.WorkspaceId
