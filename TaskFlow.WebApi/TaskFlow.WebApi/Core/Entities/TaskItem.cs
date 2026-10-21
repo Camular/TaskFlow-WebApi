@@ -13,8 +13,10 @@
         public int? Number { get; set; }
         public Project? Project { get; set; }
         public Guid? AssignedUserId { get; set; }
+        public Guid? CreatedByUserId { get; set; }
         public required Workspace Workspace { get; set; }
         public User? AssignedUser { get; set; }
-        
+        public User? CreatedByUser { get; set; }
+
     }
 }

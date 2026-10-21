@@ -9,5 +9,6 @@
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
         public ICollection<UserWorkspaceRole> UserWorkspaceRoles { get; set; } = new List<UserWorkspaceRole>();
         public ICollection<TaskItem> AssignedTaskItems { get; set; } = new List<TaskItem>();
+        public ICollection<TaskItem> CreatedTaskItems { get; set; } = new List<TaskItem>();
     }
 }

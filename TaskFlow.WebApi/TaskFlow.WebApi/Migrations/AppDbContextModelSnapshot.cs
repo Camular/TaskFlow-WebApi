@@ -706,6 +706,9 @@ namespace TaskFlow.WebApi.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("Deadline")
                         .HasColumnType("timestamp with time zone");
 
@@ -733,6 +736,8 @@ namespace TaskFlow.WebApi.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AssignedUserId");
+
+                    b.HasIndex("CreatedByUserId");
 
                     b.HasIndex("ProjectId");
 
@@ -937,6 +942,11 @@ namespace TaskFlow.WebApi.Migrations
                         .HasForeignKey("AssignedUserId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("TaskFlow.WebApi.Core.Entities.User", "CreatedByUser")
+                        .WithMany("CreatedTaskItems")
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("TaskFlow.WebApi.Core.Entities.Project", "Project")
                         .WithMany()
                         .HasForeignKey("ProjectId")
@@ -949,6 +959,8 @@ namespace TaskFlow.WebApi.Migrations
                         .IsRequired();
 
                     b.Navigation("AssignedUser");
+
+                    b.Navigation("CreatedByUser");
 
                     b.Navigation("Project");
 
@@ -994,6 +1006,8 @@ namespace TaskFlow.WebApi.Migrations
             modelBuilder.Entity("TaskFlow.WebApi.Core.Entities.User", b =>
                 {
                     b.Navigation("AssignedTaskItems");
+
+                    b.Navigation("CreatedTaskItems");
 
                     b.Navigation("UserWorkspaceRoles");
                 });
