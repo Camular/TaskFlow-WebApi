@@ -22,6 +22,38 @@ namespace TaskFlow.WebApi.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("TaskFlow.WebApi.Core.Entities.Comment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AuthorUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("TaskItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorUserId");
+
+                    b.HasIndex("TaskItemId");
+
+                    b.ToTable("Comments");
+                });
+
             modelBuilder.Entity("TaskFlow.WebApi.Core.Entities.Invitation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -876,6 +908,25 @@ namespace TaskFlow.WebApi.Migrations
                             Id = new Guid("d191a4b1-1ce3-43ed-8efa-3439ce5d6a9c"),
                             Name = "Viewer"
                         });
+                });
+
+            modelBuilder.Entity("TaskFlow.WebApi.Core.Entities.Comment", b =>
+                {
+                    b.HasOne("TaskFlow.WebApi.Core.Entities.User", "Author")
+                        .WithMany()
+                        .HasForeignKey("AuthorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TaskFlow.WebApi.Core.Entities.TaskItem", "TaskItem")
+                        .WithMany()
+                        .HasForeignKey("TaskItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Author");
+
+                    b.Navigation("TaskItem");
                 });
 
             modelBuilder.Entity("TaskFlow.WebApi.Core.Entities.Invitation", b =>
