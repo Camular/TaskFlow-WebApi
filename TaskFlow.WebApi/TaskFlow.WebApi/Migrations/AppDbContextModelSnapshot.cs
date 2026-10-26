@@ -22,6 +22,48 @@ namespace TaskFlow.WebApi.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("TaskFlow.WebApi.Core.Entities.Attachment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("StoredFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<Guid>("TaskItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UploadedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TaskItemId");
+
+                    b.HasIndex("UploadedByUserId");
+
+                    b.ToTable("Attachments");
+                });
+
             modelBuilder.Entity("TaskFlow.WebApi.Core.Entities.Comment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -908,6 +950,25 @@ namespace TaskFlow.WebApi.Migrations
                             Id = new Guid("d191a4b1-1ce3-43ed-8efa-3439ce5d6a9c"),
                             Name = "Viewer"
                         });
+                });
+
+            modelBuilder.Entity("TaskFlow.WebApi.Core.Entities.Attachment", b =>
+                {
+                    b.HasOne("TaskFlow.WebApi.Core.Entities.TaskItem", "TaskItem")
+                        .WithMany()
+                        .HasForeignKey("TaskItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TaskFlow.WebApi.Core.Entities.User", "UploadedBy")
+                        .WithMany()
+                        .HasForeignKey("UploadedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("TaskItem");
+
+                    b.Navigation("UploadedBy");
                 });
 
             modelBuilder.Entity("TaskFlow.WebApi.Core.Entities.Comment", b =>

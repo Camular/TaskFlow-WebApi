@@ -26,6 +26,8 @@ builder.Services.AddScoped<IProjectService, ProjectService>();
 
 builder.Services.AddScoped<ICommentService, CommentService>();
 
+builder.Services.AddScoped<IAttachmentService, AttachmentService>();
+
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 
 var secretKey = jwtSettings["SecretKey"]

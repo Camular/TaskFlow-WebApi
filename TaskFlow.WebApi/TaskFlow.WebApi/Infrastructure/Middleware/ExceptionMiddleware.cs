@@ -36,7 +36,8 @@ namespace TaskFlow.WebApi.Infrastructure.Middleware
             var statusCode = e switch
             {
                 KeyNotFoundException => HttpStatusCode.NotFound,            
-                InvalidOperationException => HttpStatusCode.BadRequest,       
+                InvalidOperationException => HttpStatusCode.BadRequest,
+                ArgumentException => HttpStatusCode.BadRequest,
                 UnauthorizedException => HttpStatusCode.Unauthorized,       
                 ForbiddenException => HttpStatusCode.Forbidden,            
                 UnauthorizedAccessException => HttpStatusCode.Forbidden,    
