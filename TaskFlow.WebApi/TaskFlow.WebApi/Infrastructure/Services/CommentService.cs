@@ -11,10 +11,12 @@ namespace TaskFlow.WebApi.Infrastructure.Services
     public class CommentService : ICommentService
     {
         private readonly AppDbContext _context;
+        private readonly IActivityLogService _activityLogService;
 
-        public CommentService(AppDbContext context)
+        public CommentService(AppDbContext context, IActivityLogService activityLogService)
         {
             _context = context;
+            _activityLogService = activityLogService;
         }
 
         // ====================================================================================================
@@ -127,6 +129,13 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             await _context.Comments.AddAsync(newComment);
             await _context.SaveChangesAsync();
+
+            await _activityLogService.LogAsync(
+                workspaceId,
+                userId,
+                "CommentCreated",
+                "A comment was added to the task.",
+                taskId);
 
             return new CommentSummaryDto
             {

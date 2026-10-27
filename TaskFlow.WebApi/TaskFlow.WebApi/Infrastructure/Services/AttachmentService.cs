@@ -11,10 +11,12 @@ namespace TaskFlow.WebApi.Infrastructure.Services
     public class AttachmentService : IAttachmentService
     {
         private readonly AppDbContext _context;
+        private readonly IActivityLogService _activityLogService;
 
-        public AttachmentService(AppDbContext context)
+        public AttachmentService(AppDbContext context, IActivityLogService activityLogService)
         {
             _context = context;
+            _activityLogService = activityLogService;
         }
 
         // ====================================================================================================
@@ -181,6 +183,13 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             _context.Attachments.Add(attachment);
             await _context.SaveChangesAsync();
+
+            await _activityLogService.LogAsync(
+                workspaceId,
+                userId,
+                "AttachmentUploaded",
+                $"File '{attachment.OriginalFileName}' was uploaded.",
+                taskId);
 
             return new AttachmentSummaryDto
             {

@@ -14,10 +14,12 @@ namespace TaskFlow.WebApi.Infrastructure.Services
     public class TaskItemService : ITaskItemService
     {
         private readonly AppDbContext _context;
+        private readonly IActivityLogService _activityLogService;
 
-        public TaskItemService(AppDbContext context)
+        public TaskItemService(AppDbContext context, IActivityLogService activityLogService)
         {
             _context = context;
+            _activityLogService = activityLogService;
         }
 
         // ====================================================================================================
@@ -174,7 +176,6 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             return taskSummary;
         }
 
-        // Get a task in a workspace by its project code (for example API-1).
         public async Task<TaskSummaryDto> GetTaskByCodeAsync(Guid userId, Guid workspaceId, string code)
         {
             await CheckWorkspacePermissionAsync(userId, workspaceId, SystemPermissions.TaskItem.Read);
@@ -286,6 +287,13 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
             _context.TaskItems.Add(taskItem);
             await _context.SaveChangesAsync();
+
+            await _activityLogService.LogAsync(
+                workspaceId,
+                userId,
+                "TaskCreated",
+                $"Task '{taskItem.Title}' was created.",
+                taskItem.Id);
 
             var dto = MapToTaskSummaryDto(taskItem);
 

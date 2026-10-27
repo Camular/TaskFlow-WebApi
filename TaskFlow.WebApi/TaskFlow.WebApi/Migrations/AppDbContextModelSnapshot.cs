@@ -22,6 +22,45 @@ namespace TaskFlow.WebApi.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("TaskFlow.WebApi.Core.Entities.ActivityLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("ActorUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid?>("TaskItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorUserId");
+
+                    b.HasIndex("TaskItemId");
+
+                    b.HasIndex("WorkspaceId");
+
+                    b.ToTable("ActivityLogs");
+                });
+
             modelBuilder.Entity("TaskFlow.WebApi.Core.Entities.Attachment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -950,6 +989,32 @@ namespace TaskFlow.WebApi.Migrations
                             Id = new Guid("d191a4b1-1ce3-43ed-8efa-3439ce5d6a9c"),
                             Name = "Viewer"
                         });
+                });
+
+            modelBuilder.Entity("TaskFlow.WebApi.Core.Entities.ActivityLog", b =>
+                {
+                    b.HasOne("TaskFlow.WebApi.Core.Entities.User", "Actor")
+                        .WithMany()
+                        .HasForeignKey("ActorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TaskFlow.WebApi.Core.Entities.TaskItem", "TaskItem")
+                        .WithMany()
+                        .HasForeignKey("TaskItemId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("TaskFlow.WebApi.Core.Entities.Workspace", "Workspace")
+                        .WithMany()
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Actor");
+
+                    b.Navigation("TaskItem");
+
+                    b.Navigation("Workspace");
                 });
 
             modelBuilder.Entity("TaskFlow.WebApi.Core.Entities.Attachment", b =>

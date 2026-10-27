@@ -28,6 +28,8 @@ builder.Services.AddScoped<ICommentService, CommentService>();
 
 builder.Services.AddScoped<IAttachmentService, AttachmentService>();
 
+builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
+
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 
 var secretKey = jwtSettings["SecretKey"]

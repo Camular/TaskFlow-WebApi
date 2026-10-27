@@ -15,6 +15,7 @@ This repository contains the **backend** of TaskFlow (polyrepo). The API focuses
 - **Tasks:** Workspace and personal task lists, create / update / delete, assign / unassign, status and deadline updates, summary vs detail DTOs. A task may link to a project; linked tasks get a per-project `Number` and a response `Code` such as `API-1`. Look up a linked task by code (`API-1`). Create stores `CreatedByUserId` from the access token; updates do not change it.
 - **Comments:** Create, list, update, and delete comments on a task (`comments.create`, `comments.read`, `comments.update`, `comments.delete`). Only the author can edit their own comment; delete is permission-based. List is ordered by `CreatedAt`.
 - **Attachments:** Upload, list, download, and delete files on a task (`attachments.create`, `attachments.read`, `attachments.delete`). Files are stored on disk under a local `uploads` folder (gitignored); the database keeps metadata only (`OriginalFileName`, content type, size). List does not expose `StoredFileName`; download returns the file with the original name.
+- **Activity log:** Workspace activity feed (`activitylog.read`). Entries are written internally when a task is created, a comment is added, or a file is uploaded. List is newest first; there is no public create endpoint.
 - **Cross-cutting:** Global exception middleware (401 / 403 / 404 / 400 / 409), EF Core + PostgreSQL, Docker Compose for local database
 
 ## Tech stack
@@ -100,6 +101,7 @@ Use the HTTPS URL printed by Kestrel (often `https://localhost:7xxx`). In Develo
 | Tasks | `GET /api/tasks`, workspace task CRUD, assign / unassign, status, deadline, detail, `GET .../tasks/by-code/{code}` |
 | Comments | `GET/POST /api/Tasks/{workspaceId}/tasks/{taskId}/comments`, `PUT/DELETE .../comments/{commentId}` |
 | Attachments | `GET/POST /api/Tasks/{workspaceId}/tasks/{taskId}/attachments` (POST is multipart `file`), `GET .../attachments/{attachmentId}/download`, `DELETE .../attachments/{attachmentId}` |
+| Activity | `GET /api/workspaces/{workspaceId}/activity` |
 
 Protected endpoints need `Authorization: Bearer <token>`.
 
@@ -113,9 +115,9 @@ Protected endpoints need `Authorization: Bearer <token>`.
 
 ## Status / roadmap
 
-Implemented: auth, workspaces, members, custom roles (create / list / get / update / delete), invitations (create / list / cancel / accept), projects (CRUD + key), task API (detail + unassign), task–project link with number and code, lookup by code, task `CreatedByUserId`, comments (create / list / update / delete), attachments (upload / list / download / delete).
+Implemented: auth, workspaces, members, custom roles (create / list / get / update / delete), invitations (create / list / cancel / accept), projects (CRUD + key), task API (detail + unassign), task–project link with number and code, lookup by code, task `CreatedByUserId`, comments (create / list / update / delete), attachments (upload / list / download / delete), activity log (list + auto entries on task/comment/attachment create).
 
-Next: activity log. Production hardening (rate limiting, hosting) comes later. Outbound invitation email is not implemented.
+Next: board/column or production hardening (rate limiting, hosting) as needed. Outbound invitation email is not implemented.
 
 ## Manual API coverage (7 Oct 2026)
 
@@ -133,6 +135,7 @@ Checked over HTTPS against a local API. Re-run this set before a large portfolio
 - Comments (23 Oct 2026): empty list 200. Create 201 with `Location` and `authorUserId` from the token. List ordered by `CreatedAt`. Update by author 200 with `updatedAt`. Empty body 400. Unknown comment 404. Delete 204; list no longer includes it; delete again 404. No token 401. Viewer can list and cannot create, update, or delete (403).
 - Attachments (26 Oct 2026): empty list 200. Upload multipart `file` 201 with metadata only (no `storedFileName`). List after upload 200. Empty file 400. Unknown task 404. Delete 204; file removed from disk. No token 401. Viewer can list and cannot upload or delete (403).
 - Attachment download + task by code (27 Oct 2026): download returns 200 with `Content-Disposition` original filename; content matches upload. Unknown attachment download 404. No token 401. `GET .../tasks/by-code/API-1` and `API-2` 200. Invalid format (`API`, `API-x`) 400. Unknown number / unknown key 404. Case-insensitive key match (`api-1`) 200.
+- Activity log (27 Oct 2026): empty list 200. After task create, comment create, and attachment upload, list returns three entries newest first (`AttachmentUploaded`, `CommentCreated`, `TaskCreated`) with `actorUserId` and `taskItemId`. No token 401. Viewer without `activitylog.read` gets 403.
 
 ## License
 
