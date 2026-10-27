@@ -37,7 +37,7 @@ namespace TaskFlow.WebApi.Controllers
 
         // ====================================================================================================
         // Queries
-        // List attachments on a task.
+        // List attachments on a task, and download an attachment file.
         // ====================================================================================================
 
         [HttpGet]
@@ -49,6 +49,17 @@ namespace TaskFlow.WebApi.Controllers
             var attachments = await _attachmentService.GetTaskAttachmentsAsync(userId, workspaceId, taskId);
 
             return Ok(attachments);
+        }
+
+        [HttpGet("{attachmentId}/download")]
+
+        public async Task<IActionResult> DownloadAttachmentAsync([FromRoute] Guid workspaceId, [FromRoute] Guid taskId, [FromRoute] Guid attachmentId)
+        {
+            var userId = GetCurrentUserId();
+
+            var file = await _attachmentService.DownloadAttachmentAsync(userId, workspaceId, taskId, attachmentId);
+
+            return File(file.Content, file.ContentType, file.OriginalFileName);
         }
 
         // ====================================================================================================

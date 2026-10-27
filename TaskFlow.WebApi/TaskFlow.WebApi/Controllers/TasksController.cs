@@ -38,7 +38,7 @@ namespace TaskFlow.WebApi.Controllers
 
         // ====================================================================================================
         // Queries
-        // Read the signed-in user's tasks, a workspace task list, a summary, and a detail.
+        // Read the signed-in user's tasks, a workspace task list, a summary, a detail, and a task by code.
         // ====================================================================================================
 
         [HttpGet]
@@ -61,6 +61,17 @@ namespace TaskFlow.WebApi.Controllers
             var workspacetasks = await _taskItemService.GetWorkspaceTaskSummaryAsync(userId, workspaceId);
 
             return Ok(workspacetasks);
+        }
+
+        [HttpGet("{workspaceId}/tasks/by-code/{code}")]
+
+        public async Task<IActionResult> GetTaskByCodeAsync([FromRoute] Guid workspaceId, [FromRoute] string code)
+        {
+            var userId = GetCurrentUserId();
+
+            var task = await _taskItemService.GetTaskByCodeAsync(userId, workspaceId, code);
+
+            return Ok(task);
         }
 
         [HttpGet("{workspaceId}/tasks/{taskId}")]

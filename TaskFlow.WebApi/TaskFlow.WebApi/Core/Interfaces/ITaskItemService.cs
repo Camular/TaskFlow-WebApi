@@ -4,11 +4,12 @@ namespace TaskFlow.WebApi.Core.Interfaces
 {
     public interface ITaskItemService
     {
-        // Queries — read task lists, a task summary, and a task detail.
+        // Queries — read task lists, a task summary, a task detail, and get a task by code.
         Task<List<TaskSummaryDto>> GetUserTaskSummaryAsync(Guid userId);
         Task<List<TaskSummaryDto>> GetWorkspaceTaskSummaryAsync(Guid userId, Guid workspaceId);
         Task<TaskSummaryDto> GetTaskByIdAsync(Guid userId, Guid workspaceId, Guid taskId);
         Task<TaskDetailDto> GetTaskDetailAsync(Guid userId, Guid workspaceId, Guid taskId);
+        Task<TaskSummaryDto> GetTaskByCodeAsync(Guid userId, Guid workspaceId, string code);
 
         // Commands — create, update, and delete a task.
         Task<TaskSummaryDto> CreateTaskAsync(Guid userId, Guid workspaceId, CreateTaskRequest request);

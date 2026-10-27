@@ -6,7 +6,6 @@ using TaskFlow.WebApi.Core.Entities;
 using TaskFlow.WebApi.Core.Exceptions;
 using TaskFlow.WebApi.Core.Interfaces;
 using TaskFlow.WebApi.Infrastructure.Data;
-using static TaskFlow.WebApi.Core.Authorization.SystemPermissions;
 using TaskItem = TaskFlow.WebApi.Core.Entities.TaskItem;
 using TaskStatus = TaskFlow.WebApi.Core.Entities.TaskStatus;
 
@@ -115,7 +114,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
         // ====================================================================================================
         // Queries
-        // Read task lists, a task summary, and a task detail.
+        // Read task lists, a task summary, a task detail, and get a task by code.
         // ====================================================================================================
 
         public async Task<List<TaskSummaryDto>> GetUserTaskSummaryAsync(Guid userId)
@@ -165,6 +164,61 @@ namespace TaskFlow.WebApi.Infrastructure.Services
                 .AsNoTracking()
                 .Where(t => t.WorkspaceId == workspaceId && t.Id == taskId)
                 .Select(AsTaskDetailDto)
+                .FirstOrDefaultAsync();
+
+            if (taskSummary == null)
+            {
+                throw new KeyNotFoundException("The task was not found in this workspace.");
+            }
+
+            return taskSummary;
+        }
+
+        // Get a task in a workspace by its project code (for example API-1).
+        public async Task<TaskSummaryDto> GetTaskByCodeAsync(Guid userId, Guid workspaceId, string code)
+        {
+            await CheckWorkspacePermissionAsync(userId, workspaceId, SystemPermissions.TaskItem.Read);
+
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                throw new ArgumentException("Task code is required.");
+            }
+
+            var separatorIndex = code.LastIndexOf('-');
+            if (separatorIndex <= 0 || separatorIndex == code.Length - 1)
+            {
+                throw new ArgumentException("Task code format is invalid.");
+            }
+
+            var projectKey = code.Substring(0, separatorIndex);
+            var numberPart = code.Substring(separatorIndex + 1);
+
+            if (!int.TryParse(numberPart, out var taskNumber))
+            {
+                throw new ArgumentException("Task code format is invalid.");
+            }
+
+            var projectKeyNormalized = projectKey.ToLowerInvariant();
+
+            var project = await _context.Projects
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p =>
+                    p.WorkspaceId == workspaceId &&
+                    p.Key != null &&
+                    p.Key.ToLower() == projectKeyNormalized);
+
+            if (project == null)
+            {
+                throw new KeyNotFoundException("No project matches this task code in the workspace.");
+            }
+
+            var taskSummary = await _context.TaskItems
+                .AsNoTracking()
+                .Where(t =>
+                    t.WorkspaceId == workspaceId &&
+                    t.ProjectId == project.Id &&
+                    t.Number == taskNumber)
+                .Select(AsTaskSummaryDto)
                 .FirstOrDefaultAsync();
 
             if (taskSummary == null)

@@ -75,7 +75,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
         // ====================================================================================================
         // Queries
-        // List attachments on a task.
+        // List attachments on a task, and download an attachment file.
         // ====================================================================================================
 
         public async Task<List<AttachmentSummaryDto>> GetTaskAttachmentsAsync(Guid userId, Guid workspaceId, Guid taskId)
@@ -100,6 +100,31 @@ namespace TaskFlow.WebApi.Infrastructure.Services
                 })
                 .ToListAsync();
 
+        }
+
+        public async Task<AttachmentFileDto> DownloadAttachmentAsync(Guid userId, Guid workspaceId, Guid taskId, Guid attachmentId)
+        {
+            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Attachments.Read);
+
+            await GetTaskInWorkspaceAsync(workspaceId, taskId);
+
+            var attachment = await GetAttachmentOnTaskAsync(taskId, attachmentId);
+
+            var fileAddress = Path.Combine(Directory.GetCurrentDirectory(), "uploads", attachment.StoredFileName);
+
+            if (!File.Exists(fileAddress))
+            {
+                throw new KeyNotFoundException("The attachment file was not found on disk.");
+            }
+
+            var content = await File.ReadAllBytesAsync(fileAddress);
+
+            return new AttachmentFileDto
+            {
+                Content = content,
+                ContentType = attachment.ContentType,
+                OriginalFileName = attachment.OriginalFileName
+            };
         }
 
         // ====================================================================================================
@@ -168,7 +193,8 @@ namespace TaskFlow.WebApi.Infrastructure.Services
                 UploadedByUserId = attachment.UploadedByUserId
             };
         }
-     public async Task<bool> DeleteAttachmentAsync(Guid userId, Guid workspaceId, Guid taskId, Guid attachmentId)
+
+        public async Task<bool> DeleteAttachmentAsync(Guid userId, Guid workspaceId, Guid taskId, Guid attachmentId)
         {
             await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Attachments.Delete);
 
