@@ -16,6 +16,7 @@ This repository contains the **backend** of TaskFlow (polyrepo). The API focuses
 - **Comments:** Create, list, update, and delete comments on a task (`comments.create`, `comments.read`, `comments.update`, `comments.delete`). Only the author can edit their own comment; delete is permission-based. List is ordered by `CreatedAt`.
 - **Attachments:** Upload, list, download, and delete files on a task (`attachments.create`, `attachments.read`, `attachments.delete`). Files are stored on disk under a local `uploads` folder (gitignored); the database keeps metadata only (`OriginalFileName`, content type, size). List does not expose `StoredFileName`; download returns the file with the original name.
 - **Activity log:** Workspace activity feed (`activitylog.read`). Entries are written internally when a task is created, a comment is added, or a file is uploaded. List is newest first; there is no public create endpoint.
+- **Boards & columns:** Create, list, get, update, and delete boards in a workspace; create, list, update, and delete columns on a board (ordered by `Position`). Board/column names are unique within their parent. Move a task onto a column or clear it (`PATCH .../tasks/{taskId}/column`). Deleting a board cascades columns; deleting a column sets task `ColumnId` to null (`SetNull`). Board routes reuse `taskitem.read` / `taskitem.update` for now (no separate `boards.*` codes yet).
 - **Cross-cutting:** Global exception middleware (401 / 403 / 404 / 400 / 409), EF Core + PostgreSQL, Docker Compose for local database
 
 ## Tech stack
@@ -102,6 +103,9 @@ Use the HTTPS URL printed by Kestrel (often `https://localhost:7xxx`). In Develo
 | Comments | `GET/POST /api/Tasks/{workspaceId}/tasks/{taskId}/comments`, `PUT/DELETE .../comments/{commentId}` |
 | Attachments | `GET/POST /api/Tasks/{workspaceId}/tasks/{taskId}/attachments` (POST is multipart `file`), `GET .../attachments/{attachmentId}/download`, `DELETE .../attachments/{attachmentId}` |
 | Activity | `GET /api/workspaces/{workspaceId}/activity` |
+| Boards | `GET/POST /api/workspaces/{workspaceId}/boards`, `GET/PUT/DELETE .../boards/{boardId}` |
+| Columns | `GET/POST /api/workspaces/{workspaceId}/boards/{boardId}/columns`, `PUT/DELETE .../columns/{columnId}` |
+| Task column | `PATCH /api/Tasks/{workspaceId}/tasks/{taskId}/column` (`columnId` or `null`) |
 
 Protected endpoints need `Authorization: Bearer <token>`.
 
@@ -115,9 +119,9 @@ Protected endpoints need `Authorization: Bearer <token>`.
 
 ## Status / roadmap
 
-Implemented: auth, workspaces, members, custom roles (create / list / get / update / delete), invitations (create / list / cancel / accept), projects (CRUD + key), task API (detail + unassign), task–project link with number and code, lookup by code, task `CreatedByUserId`, comments (create / list / update / delete), attachments (upload / list / download / delete), activity log (list + auto entries on task/comment/attachment create).
+Implemented: auth, workspaces, members, custom roles (create / list / get / update / delete), invitations (create / list / cancel / accept), projects (CRUD + key), task API (detail + unassign), task–project link with number and code, lookup by code, task `CreatedByUserId`, comments (create / list / update / delete), attachments (upload / list / download / delete), activity log (list + auto entries on task/comment/attachment create), boards and columns (CRUD) plus move task to column.
 
-Next: board/column or production hardening (rate limiting, hosting) as needed. Outbound invitation email is not implemented.
+Next: production hardening (rate limiting, hosting) or dedicated `boards.*` permissions as needed. Outbound invitation email is not implemented.
 
 ## Manual API coverage (7 Oct 2026)
 
@@ -136,6 +140,7 @@ Checked over HTTPS against a local API. Re-run this set before a large portfolio
 - Attachments (26 Oct 2026): empty list 200. Upload multipart `file` 201 with metadata only (no `storedFileName`). List after upload 200. Empty file 400. Unknown task 404. Delete 204; file removed from disk. No token 401. Viewer can list and cannot upload or delete (403).
 - Attachment download + task by code (27 Oct 2026): download returns 200 with `Content-Disposition` original filename; content matches upload. Unknown attachment download 404. No token 401. `GET .../tasks/by-code/API-1` and `API-2` 200. Invalid format (`API`, `API-x`) 400. Unknown number / unknown key 404. Case-insensitive key match (`api-1`) 200.
 - Activity log (27 Oct 2026): empty list 200. After task create, comment create, and attachment upload, list returns three entries newest first (`AttachmentUploaded`, `CommentCreated`, `TaskCreated`) with `actorUserId` and `taskItemId`. No token 401. Viewer without `activitylog.read` gets 403.
+- Boards / columns / move task (27 Oct 2026): board create 201, list/get/update 200, duplicate board name 409. Column create ×2 201, list ordered by position 200, update 200, duplicate column name 409. Move task to column 200 (`columnId` set), move to another column 200, clear with `null` 200, unknown column 404. Delete column 204, delete board 204, list boards empty 200. No token 401.
 
 ## License
 

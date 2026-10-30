@@ -38,6 +38,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             CreatedByUserId = t.CreatedByUserId,
             WorkspaceId = t.WorkspaceId,
             ProjectId = t.ProjectId,
+            ColumnId = t.ColumnId,
             Number = t.Number,
             Code = (t.Number != null && t.Project != null && t.Project.Key != null) ? t.Project.Key + "-" + t.Number : null
         };
@@ -54,6 +55,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             CreatedByUserId = t.CreatedByUserId,
             WorkspaceId = t.WorkspaceId,
             ProjectId = t.ProjectId,
+            ColumnId = t.ColumnId,
             Number = t.Number,
             Code = (t.Number != null && t.Project != null && t.Project.Key != null) ? t.Project.Key + "-" + t.Number : null
         };
@@ -68,6 +70,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             CreatedByUserId = task.CreatedByUserId,
             WorkspaceId = task.WorkspaceId,
             ProjectId = task.ProjectId,
+            ColumnId = task.ColumnId,
             Number = task.Number,
             Code = (task.Number != null && task.Project != null && task.Project.Key != null) ? task.Project.Key + "-" + task.Number : null
         };
@@ -379,7 +382,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
         // ====================================================================================================
         // Assignment and schedule
-        // Assign or clear the assignee, and change the deadline or status.
+        // Assign or clear the assignee, change the deadline or status, and move a task to a column.
         // ====================================================================================================
 
         public async Task<TaskSummaryDto> AssignUserToTaskAsync(Guid requesterUserId, Guid workspaceId, Guid taskId, AssignUserToTaskRequest request)
@@ -461,6 +464,31 @@ namespace TaskFlow.WebApi.Infrastructure.Services
             var taskItem = await GetTaskInWorkspaceAsync(workspaceId, taskId);
 
             taskItem.Status = request.Status;
+
+            await _context.SaveChangesAsync();
+
+            return MapToTaskSummaryDto(taskItem);
+        }
+
+        public async Task<TaskSummaryDto> MoveTaskToColumnAsync(Guid userId, Guid workspaceId, Guid taskId, MoveTaskToColumnRequest request)
+        {
+            await CheckWorkspacePermissionAsync(userId, workspaceId, SystemPermissions.TaskItem.Update);
+
+            var taskItem = await GetTaskInWorkspaceAsync(workspaceId, taskId);
+
+            if (request.ColumnId.HasValue)
+            {
+                var columnExistsInWorkspace = await _context.Columns
+                    .AsNoTracking()
+                    .AnyAsync(c => c.Id == request.ColumnId.Value && c.Board.WorkspaceId == workspaceId);
+
+                if (!columnExistsInWorkspace)
+                {
+                    throw new KeyNotFoundException("The column was not found in this workspace.");
+                }
+            }
+
+            taskItem.ColumnId = request.ColumnId;
 
             await _context.SaveChangesAsync();
 

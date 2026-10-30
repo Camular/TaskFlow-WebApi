@@ -16,10 +16,11 @@ namespace TaskFlow.WebApi.Core.Interfaces
         Task<TaskSummaryDto> UpdateTaskAsync(Guid userId, Guid workspaceId, Guid taskId, UpdateTaskRequest request);
         Task<bool> DeleteTaskAsync(Guid userId, Guid workspaceId, Guid taskId);
 
-        // Assignment and schedule — assign or clear the assignee, and change the deadline or status.
+        // Assignment and schedule — assign or clear the assignee, change the deadline or status, and move a task to a column.
         Task<TaskSummaryDto> AssignUserToTaskAsync(Guid requesterUserId, Guid workspaceId, Guid taskId, AssignUserToTaskRequest request);
         Task<TaskSummaryDto> UnassignFromTaskAsync(Guid userId, Guid workspaceId, Guid taskId);
         Task<TaskSummaryDto> UpdateTaskDeadlineAsync(Guid userId, Guid workspaceId, Guid taskId, UpdateTaskDeadlineRequest request);
         Task<TaskSummaryDto> UpdateTaskStatusAsync(Guid userId, Guid workspaceId, Guid taskId, UpdateTaskStatusRequest request);
+        Task<TaskSummaryDto> MoveTaskToColumnAsync(Guid userId, Guid workspaceId, Guid taskId, MoveTaskToColumnRequest request);
     }
 }

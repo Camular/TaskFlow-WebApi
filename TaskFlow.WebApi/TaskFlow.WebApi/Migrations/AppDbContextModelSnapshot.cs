@@ -103,6 +103,54 @@ namespace TaskFlow.WebApi.Migrations
                     b.ToTable("Attachments");
                 });
 
+            modelBuilder.Entity("TaskFlow.WebApi.Core.Entities.Board", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkspaceId");
+
+                    b.ToTable("Boards");
+                });
+
+            modelBuilder.Entity("TaskFlow.WebApi.Core.Entities.Column", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoardId");
+
+                    b.ToTable("Columns");
+                });
+
             modelBuilder.Entity("TaskFlow.WebApi.Core.Entities.Comment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -816,6 +864,9 @@ namespace TaskFlow.WebApi.Migrations
                     b.Property<Guid?>("AssignedUserId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ColumnId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -849,6 +900,8 @@ namespace TaskFlow.WebApi.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AssignedUserId");
+
+                    b.HasIndex("ColumnId");
 
                     b.HasIndex("CreatedByUserId");
 
@@ -1036,6 +1089,28 @@ namespace TaskFlow.WebApi.Migrations
                     b.Navigation("UploadedBy");
                 });
 
+            modelBuilder.Entity("TaskFlow.WebApi.Core.Entities.Board", b =>
+                {
+                    b.HasOne("TaskFlow.WebApi.Core.Entities.Workspace", "Workspace")
+                        .WithMany()
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Workspace");
+                });
+
+            modelBuilder.Entity("TaskFlow.WebApi.Core.Entities.Column", b =>
+                {
+                    b.HasOne("TaskFlow.WebApi.Core.Entities.Board", "Board")
+                        .WithMany()
+                        .HasForeignKey("BoardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Board");
+                });
+
             modelBuilder.Entity("TaskFlow.WebApi.Core.Entities.Comment", b =>
                 {
                     b.HasOne("TaskFlow.WebApi.Core.Entities.User", "Author")
@@ -1119,6 +1194,11 @@ namespace TaskFlow.WebApi.Migrations
                         .HasForeignKey("AssignedUserId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("TaskFlow.WebApi.Core.Entities.Column", "Column")
+                        .WithMany()
+                        .HasForeignKey("ColumnId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("TaskFlow.WebApi.Core.Entities.User", "CreatedByUser")
                         .WithMany("CreatedTaskItems")
                         .HasForeignKey("CreatedByUserId")
@@ -1136,6 +1216,8 @@ namespace TaskFlow.WebApi.Migrations
                         .IsRequired();
 
                     b.Navigation("AssignedUser");
+
+                    b.Navigation("Column");
 
                     b.Navigation("CreatedByUser");
 

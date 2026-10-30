@@ -12,6 +12,8 @@
         public Guid? ProjectId { get; set; }
         public int? Number { get; set; }
         public Project? Project { get; set; }
+        public Guid? ColumnId { get; set; }
+        public Column? Column { get; set; }
         public Guid? AssignedUserId { get; set; }
         public Guid? CreatedByUserId { get; set; }
         public required Workspace Workspace { get; set; }

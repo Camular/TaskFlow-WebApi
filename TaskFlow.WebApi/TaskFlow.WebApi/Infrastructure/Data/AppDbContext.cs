@@ -21,6 +21,8 @@ namespace TaskFlow.WebApi.Infrastructure.Data
         public DbSet<Comment> Comments { get; set; }
         public DbSet<Attachment> Attachments { get; set; }
         public DbSet<ActivityLog> ActivityLogs { get; set; }
+        public DbSet<Board> Boards { get; set; }
+        public DbSet<Column> Columns { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

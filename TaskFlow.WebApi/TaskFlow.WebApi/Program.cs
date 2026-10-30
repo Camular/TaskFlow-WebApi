@@ -30,6 +30,8 @@ builder.Services.AddScoped<IAttachmentService, AttachmentService>();
 
 builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
 
+builder.Services.AddScoped<IBoardService, BoardService>();
+
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 
 var secretKey = jwtSettings["SecretKey"]

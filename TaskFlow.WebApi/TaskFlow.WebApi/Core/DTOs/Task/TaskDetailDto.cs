@@ -12,6 +12,7 @@ namespace TaskFlow.WebApi.Core.DTOs.Task
         public required DateTime? Deadline { get; set; }
         public Guid WorkspaceId { get; set; }
         public Guid? ProjectId { get; set; }
+        public Guid? ColumnId { get; set; }
         public int? Number { get; set; }
         public string? Code { get; set; }
         public Guid? AssignedUserId { get; set; }

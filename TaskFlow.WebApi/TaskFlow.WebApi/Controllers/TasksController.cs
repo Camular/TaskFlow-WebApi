@@ -136,7 +136,7 @@ namespace TaskFlow.WebApi.Controllers
 
         // ====================================================================================================
         // Assignment and schedule
-        // Assign or clear the assignee, and change the deadline or status.
+        // Assign or clear the assignee, change the deadline or status, and move a task to a column.
         // ====================================================================================================
 
         [HttpPatch("{workspaceId}/tasks/{taskId}/assign")]
@@ -179,6 +179,16 @@ namespace TaskFlow.WebApi.Controllers
             var userId = GetCurrentUserId();
 
             var updatedTask = await _taskItemService.UpdateTaskStatusAsync(userId, workspaceId, taskId, request);
+
+            return Ok(updatedTask);
+        }
+
+        [HttpPatch("{workspaceId}/tasks/{taskId}/column")]
+        public async Task<IActionResult> MoveTaskToColumnAsync([FromRoute] Guid workspaceId, [FromRoute] Guid taskId, [FromBody] MoveTaskToColumnRequest request)
+        {
+            var userId = GetCurrentUserId();
+
+            var updatedTask = await _taskItemService.MoveTaskToColumnAsync(userId, workspaceId, taskId, request);
 
             return Ok(updatedTask);
         }
