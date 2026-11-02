@@ -428,6 +428,30 @@ namespace TaskFlow.WebApi.Migrations
                             Id = new Guid("ffc869ed-7030-4d5a-9eab-9957d13efe8c"),
                             Code = "attachments.update",
                             Description = "Update files attached to tasks."
+                        },
+                        new
+                        {
+                            Id = new Guid("bbf12eeb-b444-4211-9313-7e69c0272fdc"),
+                            Code = "boards.create",
+                            Description = "Create boards and columns in the workspace."
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a72273-8ad9-45fa-9cdb-4e55008dd3bf"),
+                            Code = "boards.read",
+                            Description = "View boards and columns in the workspace."
+                        },
+                        new
+                        {
+                            Id = new Guid("302fc825-1f95-4628-9a2d-38a911a19229"),
+                            Code = "boards.update",
+                            Description = "Update boards and columns in the workspace."
+                        },
+                        new
+                        {
+                            Id = new Guid("12d9f34f-4323-4bd8-aef9-59d46afb3474"),
+                            Code = "boards.delete",
+                            Description = "Delete boards and columns in the workspace."
                         });
                 });
 
@@ -625,6 +649,26 @@ namespace TaskFlow.WebApi.Migrations
                         },
                         new
                         {
+                            RoleId = new Guid("87f54898-67b8-42c9-b3bf-df33cd1d0c6a"),
+                            PermissionId = new Guid("bbf12eeb-b444-4211-9313-7e69c0272fdc")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("87f54898-67b8-42c9-b3bf-df33cd1d0c6a"),
+                            PermissionId = new Guid("c1a72273-8ad9-45fa-9cdb-4e55008dd3bf")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("87f54898-67b8-42c9-b3bf-df33cd1d0c6a"),
+                            PermissionId = new Guid("302fc825-1f95-4628-9a2d-38a911a19229")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("87f54898-67b8-42c9-b3bf-df33cd1d0c6a"),
+                            PermissionId = new Guid("12d9f34f-4323-4bd8-aef9-59d46afb3474")
+                        },
+                        new
+                        {
                             RoleId = new Guid("c89567a9-7c63-4c62-80de-dd54fc3a1c9e"),
                             PermissionId = new Guid("8c9a2c14-6516-493e-9b21-56c113a86c13")
                         },
@@ -765,6 +809,26 @@ namespace TaskFlow.WebApi.Migrations
                         },
                         new
                         {
+                            RoleId = new Guid("c89567a9-7c63-4c62-80de-dd54fc3a1c9e"),
+                            PermissionId = new Guid("bbf12eeb-b444-4211-9313-7e69c0272fdc")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c89567a9-7c63-4c62-80de-dd54fc3a1c9e"),
+                            PermissionId = new Guid("c1a72273-8ad9-45fa-9cdb-4e55008dd3bf")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c89567a9-7c63-4c62-80de-dd54fc3a1c9e"),
+                            PermissionId = new Guid("302fc825-1f95-4628-9a2d-38a911a19229")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c89567a9-7c63-4c62-80de-dd54fc3a1c9e"),
+                            PermissionId = new Guid("12d9f34f-4323-4bd8-aef9-59d46afb3474")
+                        },
+                        new
+                        {
                             RoleId = new Guid("ecb6c928-cc9b-404d-b04b-a9612c377cce"),
                             PermissionId = new Guid("8c9a2c14-6516-493e-9b21-56c113a86c13")
                         },
@@ -830,6 +894,11 @@ namespace TaskFlow.WebApi.Migrations
                         },
                         new
                         {
+                            RoleId = new Guid("ecb6c928-cc9b-404d-b04b-a9612c377cce"),
+                            PermissionId = new Guid("c1a72273-8ad9-45fa-9cdb-4e55008dd3bf")
+                        },
+                        new
+                        {
                             RoleId = new Guid("d191a4b1-1ce3-43ed-8efa-3439ce5d6a9c"),
                             PermissionId = new Guid("8c9a2c14-6516-493e-9b21-56c113a86c13")
                         },
@@ -852,6 +921,11 @@ namespace TaskFlow.WebApi.Migrations
                         {
                             RoleId = new Guid("d191a4b1-1ce3-43ed-8efa-3439ce5d6a9c"),
                             PermissionId = new Guid("b0670926-df3f-41e3-a5d8-9a2cb70967e7")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("d191a4b1-1ce3-43ed-8efa-3439ce5d6a9c"),
+                            PermissionId = new Guid("c1a72273-8ad9-45fa-9cdb-4e55008dd3bf")
                         });
                 });
 

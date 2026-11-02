@@ -69,6 +69,12 @@ namespace TaskFlow.WebApi.Infrastructure.Data.Configurations
                 // 1.6 Activity log permissions
                 new RolePermission { RoleId = SystemRoles.OwnerId, PermissionId = SystemPermissions.ActivityLog.ReadId },
 
+                // 1.7 Board permissions (full)
+                new RolePermission { RoleId = SystemRoles.OwnerId, PermissionId = SystemPermissions.Boards.CreateId },
+                new RolePermission { RoleId = SystemRoles.OwnerId, PermissionId = SystemPermissions.Boards.ReadId },
+                new RolePermission { RoleId = SystemRoles.OwnerId, PermissionId = SystemPermissions.Boards.UpdateId },
+                new RolePermission { RoleId = SystemRoles.OwnerId, PermissionId = SystemPermissions.Boards.DeleteId },
+
 
                 // ====================================================================================================
                 // 2. ADMINISTRATOR — full access except deleting the workspace
@@ -114,6 +120,12 @@ namespace TaskFlow.WebApi.Infrastructure.Data.Configurations
                 // 2.6 Activity log permissions
                 new RolePermission { RoleId = SystemRoles.AdministratorId, PermissionId = SystemPermissions.ActivityLog.ReadId },
 
+                // 2.7 Board permissions (full)
+                new RolePermission { RoleId = SystemRoles.AdministratorId, PermissionId = SystemPermissions.Boards.CreateId },
+                new RolePermission { RoleId = SystemRoles.AdministratorId, PermissionId = SystemPermissions.Boards.ReadId },
+                new RolePermission { RoleId = SystemRoles.AdministratorId, PermissionId = SystemPermissions.Boards.UpdateId },
+                new RolePermission { RoleId = SystemRoles.AdministratorId, PermissionId = SystemPermissions.Boards.DeleteId },
+
 
                 // ====================================================================================================
                 // 3. MEMBER — day-to-day work, without delete or workspace settings
@@ -142,6 +154,9 @@ namespace TaskFlow.WebApi.Infrastructure.Data.Configurations
                 new RolePermission { RoleId = SystemRoles.MemberId, PermissionId = SystemPermissions.Attachments.ReadId },
                 new RolePermission { RoleId = SystemRoles.MemberId, PermissionId = SystemPermissions.Attachments.UpdateId },
 
+                // 3.6 Board permissions (view only)
+                new RolePermission { RoleId = SystemRoles.MemberId, PermissionId = SystemPermissions.Boards.ReadId },
+
 
                 // ====================================================================================================
                 // 4. VIEWER — read only
@@ -160,7 +175,10 @@ namespace TaskFlow.WebApi.Infrastructure.Data.Configurations
                 new RolePermission { RoleId = SystemRoles.ViewerId, PermissionId = SystemPermissions.Comments.ReadId },
 
                 // 4.5 Attachment permissions (view only)
-                new RolePermission { RoleId = SystemRoles.ViewerId, PermissionId = SystemPermissions.Attachments.ReadId }
+                new RolePermission { RoleId = SystemRoles.ViewerId, PermissionId = SystemPermissions.Attachments.ReadId },
+
+                // 4.6 Board permissions (view only)
+                new RolePermission { RoleId = SystemRoles.ViewerId, PermissionId = SystemPermissions.Boards.ReadId }
 
             );
         }

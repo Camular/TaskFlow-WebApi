@@ -82,7 +82,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
         public async Task<List<BoardSummaryDto>> GetWorkspaceBoardsAsync(Guid userId, Guid workspaceId)
         {
-            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.TaskItem.Read);
+            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Boards.Read);
 
             return await _context.Boards
                 .AsNoTracking()
@@ -100,7 +100,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
         public async Task<BoardSummaryDto> GetBoardByIdAsync(Guid userId, Guid workspaceId, Guid boardId)
         {
-            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.TaskItem.Read);
+            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Boards.Read);
 
             var board = await _context.Boards
                 .AsNoTracking()
@@ -128,7 +128,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
         public async Task<BoardSummaryDto> CreateBoardAsync(Guid userId, Guid workspaceId, CreateBoardRequest request)
         {
-            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.TaskItem.Update);
+            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Boards.Create);
 
             var boardNameExists = await _context.Boards
                 .AnyAsync(b => b.WorkspaceId == workspaceId && b.Name.ToLower() == request.Name.ToLower());
@@ -161,7 +161,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
         public async Task<BoardSummaryDto> UpdateBoardAsync(Guid userId, Guid workspaceId, Guid boardId, UpdateBoardRequest request)
         {
-            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.TaskItem.Update);
+            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Boards.Update);
 
             var board = await GetBoardInWorkspaceAsync(workspaceId, boardId);
 
@@ -190,7 +190,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
         public async Task<bool> DeleteBoardAsync(Guid userId, Guid workspaceId, Guid boardId)
         {
-            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.TaskItem.Update);
+            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Boards.Delete);
 
             var board = await GetBoardInWorkspaceAsync(workspaceId, boardId);
 
@@ -208,7 +208,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
         public async Task<List<ColumnSummaryDto>> GetBoardColumnsAsync(Guid userId, Guid workspaceId, Guid boardId)
         {
-            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.TaskItem.Read);
+            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Boards.Read);
 
             await GetBoardInWorkspaceAsync(workspaceId, boardId);
 
@@ -234,7 +234,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
         public async Task<ColumnSummaryDto> CreateColumnAsync(Guid userId, Guid workspaceId, Guid boardId, CreateColumnRequest request)
         {
-            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.TaskItem.Update);
+            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Boards.Create);
 
             await GetBoardInWorkspaceAsync(workspaceId, boardId);
 
@@ -269,7 +269,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
         public async Task<ColumnSummaryDto> UpdateColumnAsync(Guid userId, Guid workspaceId, Guid boardId, Guid columnId, UpdateColumnRequest request)
         {
-            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.TaskItem.Update);
+            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Boards.Update);
 
             await GetBoardInWorkspaceAsync(workspaceId, boardId);
 
@@ -301,7 +301,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
         public async Task<bool> DeleteColumnAsync(Guid userId, Guid workspaceId, Guid boardId, Guid columnId)
         {
-            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.TaskItem.Update);
+            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Boards.Delete);
 
             await GetBoardInWorkspaceAsync(workspaceId, boardId);
 

@@ -106,5 +106,20 @@
             public const string Delete = "attachments.delete";
             public static readonly Guid DeleteId = Guid.Parse("C3E756B7-E7C8-4373-8741-A3328E5413DD");
         }
+
+        public static class Boards
+        {
+            public const string Create = "boards.create";
+            public static readonly Guid CreateId = Guid.Parse("BBF12EEB-B444-4211-9313-7E69C0272FDC");
+
+            public const string Read = "boards.read";
+            public static readonly Guid ReadId = Guid.Parse("C1A72273-8AD9-45FA-9CDB-4E55008DD3BF");
+
+            public const string Update = "boards.update";
+            public static readonly Guid UpdateId = Guid.Parse("302FC825-1F95-4628-9A2D-38A911A19229");
+
+            public const string Delete = "boards.delete";
+            public static readonly Guid DeleteId = Guid.Parse("12D9F34F-4323-4BD8-AEF9-59D46AFB3474");
+        }
     }
 }

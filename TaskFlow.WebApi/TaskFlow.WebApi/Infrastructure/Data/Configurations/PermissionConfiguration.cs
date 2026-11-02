@@ -235,6 +235,35 @@ namespace TaskFlow.WebApi.Infrastructure.Data.Configurations
                     Id = SystemPermissions.Attachments.UpdateId,
                     Code = SystemPermissions.Attachments.Update,
                     Description = "Update files attached to tasks."
+                },
+
+                // ==========================================
+                //              Board permissions
+                // ==========================================
+
+                new Permission
+                {
+                    Id = SystemPermissions.Boards.CreateId,
+                    Code = SystemPermissions.Boards.Create,
+                    Description = "Create boards and columns in the workspace."
+                },
+                new Permission
+                {
+                    Id = SystemPermissions.Boards.ReadId,
+                    Code = SystemPermissions.Boards.Read,
+                    Description = "View boards and columns in the workspace."
+                },
+                new Permission
+                {
+                    Id = SystemPermissions.Boards.UpdateId,
+                    Code = SystemPermissions.Boards.Update,
+                    Description = "Update boards and columns in the workspace."
+                },
+                new Permission
+                {
+                    Id = SystemPermissions.Boards.DeleteId,
+                    Code = SystemPermissions.Boards.Delete,
+                    Description = "Delete boards and columns in the workspace."
                 }
             );
         }
