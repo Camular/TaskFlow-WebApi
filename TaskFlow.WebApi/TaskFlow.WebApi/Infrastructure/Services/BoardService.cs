@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using TaskFlow.WebApi.Core.Authorization;
 using TaskFlow.WebApi.Core.DTOs.Board;
+using TaskFlow.WebApi.Core.DTOs.Task;
 using TaskFlow.WebApi.Core.Entities;
 using TaskFlow.WebApi.Core.Exceptions;
 using TaskFlow.WebApi.Core.Interfaces;
@@ -77,7 +78,7 @@ namespace TaskFlow.WebApi.Infrastructure.Services
 
         // ====================================================================================================
         // Board queries
-        // List boards in a workspace, and get one board by id.
+        // List boards in a workspace, get one board by id, and get a board view with columns and tasks.
         // ====================================================================================================
 
         public async Task<List<BoardSummaryDto>> GetWorkspaceBoardsAsync(Guid userId, Guid workspaceId)
@@ -118,6 +119,69 @@ namespace TaskFlow.WebApi.Infrastructure.Services
                 Name = board.Name,
                 CreatedAt = board.CreatedAt
             };
+        }
+
+        public async Task<BoardViewDto> GetBoardViewAsync(Guid userId, Guid workspaceId, Guid boardId)
+        {
+            await CheckAndGetWorkspaceRoleAsync(userId, workspaceId, SystemPermissions.Boards.Read);
+
+            var board = await _context.Boards
+                .AsNoTracking()
+                .FirstOrDefaultAsync(b => b.WorkspaceId == workspaceId && b.Id == boardId);
+
+            if (board == null)
+            {
+                throw new KeyNotFoundException("The board was not found in this workspace.");
+            }
+
+            var columns = await _context.Columns
+                .AsNoTracking()
+                .Where(c => c.BoardId == board.Id)
+                .OrderBy(c => c.Position)
+                .ToListAsync();
+
+            var columnIds = columns.Select(c => c.Id).ToList();
+
+            var tasks = await _context.TaskItems
+                .AsNoTracking()
+                .Include(t => t.Project)
+                .Where(t => t.WorkspaceId == workspaceId && t.ColumnId != null && columnIds.Contains(t.ColumnId.Value))
+                .ToListAsync();
+
+            var boardView = new BoardViewDto
+            {
+                Id = board.Id,
+                Name = board.Name,
+                CreatedAt = board.CreatedAt,
+                WorkspaceId = board.WorkspaceId,
+                Columns = columns.Select(c => new ColumnWithTasksDto
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    BoardId = c.BoardId,
+                    Position = c.Position,
+                    Tasks = tasks.Where(t => t.ColumnId == c.Id)
+                        .Select(t => new TaskSummaryDto
+                        {
+                            Id = t.Id,
+                            CreatedAt = t.CreatedAt,
+                            Deadline = t.Deadline,
+                            Status = t.Status,
+                            Title = t.Title,
+                            ColumnId = t.ColumnId,
+                            AssignedUserId = t.AssignedUserId,
+                            CreatedByUserId = t.CreatedByUserId,
+                            Number = t.Number,
+                            ProjectId = t.ProjectId,
+                            WorkspaceId = t.WorkspaceId,
+                            Code = (t.Number != null && t.Project != null && t.Project.Key != null)
+                                ? t.Project.Key + "-" + t.Number
+                                : null
+                        }).ToList()
+                }).ToList()
+            };
+
+            return boardView;
         }
 
 

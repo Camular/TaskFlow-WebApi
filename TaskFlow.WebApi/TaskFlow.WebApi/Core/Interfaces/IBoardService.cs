@@ -4,9 +4,10 @@ namespace TaskFlow.WebApi.Core.Interfaces
 {
     public interface IBoardService
     {
-        // Boards — list boards, get one board, create, update, and delete a board.
+        // Boards — list boards, get one board, get a board view, create, update, and delete a board.
         Task<List<BoardSummaryDto>> GetWorkspaceBoardsAsync(Guid userId, Guid workspaceId);
         Task<BoardSummaryDto> GetBoardByIdAsync(Guid userId, Guid workspaceId, Guid boardId);
+        Task<BoardViewDto> GetBoardViewAsync(Guid userId, Guid workspaceId, Guid boardId);
         Task<BoardSummaryDto> CreateBoardAsync(Guid userId, Guid workspaceId, CreateBoardRequest request);
         Task<BoardSummaryDto> UpdateBoardAsync(Guid userId, Guid workspaceId, Guid boardId, UpdateBoardRequest request);
         Task<bool> DeleteBoardAsync(Guid userId, Guid workspaceId, Guid boardId);

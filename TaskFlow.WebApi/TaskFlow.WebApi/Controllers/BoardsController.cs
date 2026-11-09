@@ -27,6 +27,7 @@ namespace TaskFlow.WebApi.Controllers
         private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
             if (string.IsNullOrEmpty(userIdClaim))
             {
                 throw new UnauthorizedException("The access token is missing, invalid, or expired.");
@@ -36,7 +37,7 @@ namespace TaskFlow.WebApi.Controllers
 
         // ====================================================================================================
         // Board queries
-        // List boards in a workspace, and get one board by id.
+        // List boards in a workspace, get one board by id, and get a board view with columns and tasks.
         // ====================================================================================================
 
         [HttpGet]
@@ -58,6 +59,16 @@ namespace TaskFlow.WebApi.Controllers
             var board = await _boardService.GetBoardByIdAsync(userId, workspaceId, boardId);
 
             return Ok(board);
+        }
+
+        [HttpGet("{boardId}/view")]
+        public async Task<IActionResult> GetBoardViewAsync([FromRoute] Guid workspaceId, [FromRoute] Guid boardId)
+        {
+            var userId = GetCurrentUserId();
+
+            var boardView = await _boardService.GetBoardViewAsync(userId, workspaceId, boardId);
+
+            return Ok(boardView);
         }
 
         // ====================================================================================================
