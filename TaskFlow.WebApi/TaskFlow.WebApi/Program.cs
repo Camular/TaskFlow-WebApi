@@ -32,6 +32,22 @@ builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
 
 builder.Services.AddScoped<IBoardService, BoardService>();
 
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>();
+
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? Array.Empty<string>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 
 var secretKey = jwtSettings["SecretKey"]
@@ -71,10 +87,14 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors("Frontend");
+
 app.UseAuthentication();
 
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapHealthChecks("/health");
 
 app.Run();
