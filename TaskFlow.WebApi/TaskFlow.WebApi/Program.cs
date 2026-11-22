@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -50,6 +51,60 @@ builder.Services.AddCors(options =>
     });
 });
 
+var trustPlatformProxy = builder.Configuration.GetValue("ForwardedHeaders:TrustPlatformProxy", false);
+var forwardLimit = builder.Configuration.GetValue("ForwardedHeaders:ForwardLimit", 1);
+var knownNetworkCidrs = (builder.Configuration.GetSection("ForwardedHeaders:KnownIPNetworks").Get<string[]>()
+    ?? Array.Empty<string>())
+    .Where(cidr => !string.IsNullOrWhiteSpace(cidr))
+    .Select(cidr => cidr.Trim())
+    .ToArray();
+
+if (forwardLimit < 1)
+{
+    throw new InvalidOperationException("ForwardedHeaders:ForwardLimit must be at least 1.");
+}
+
+// TrustPlatformProxy clears the proxy allow-list. Combining it with CIDRs would look
+// like "trust Render" but would actually trust only those CIDRs.
+if (trustPlatformProxy && knownNetworkCidrs.Length > 0)
+{
+    throw new InvalidOperationException(
+        "ForwardedHeaders:TrustPlatformProxy cannot be combined with ForwardedHeaders:KnownIPNetworks.");
+}
+
+// With an empty allow-list the middleware does not check each hop. A limit above 1
+// would accept client-supplied X-Forwarded-For values to the left of the proxy's entry.
+if (trustPlatformProxy && forwardLimit != 1)
+{
+    throw new InvalidOperationException(
+        "ForwardedHeaders:ForwardLimit must be 1 when ForwardedHeaders:TrustPlatformProxy is true.");
+}
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardLimit = forwardLimit;
+
+    if (trustPlatformProxy)
+    {
+        // Render does not publish the load-balancer address. Empty lists trust the
+        // socket peer. Safe only when the container port is not reachable from the internet.
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+    }
+
+    foreach (var cidr in knownNetworkCidrs)
+    {
+        if (!System.Net.IPNetwork.TryParse(cidr, out var network))
+        {
+            throw new InvalidOperationException(
+                $"ForwardedHeaders:KnownIPNetworks contains an invalid CIDR '{cidr}'.");
+        }
+
+        options.KnownIPNetworks.Add(network);
+    }
+});
+
 var rateLimitPermit = builder.Configuration.GetValue("RateLimiting:PermitLimit", 100);
 var rateLimitWindowSeconds = builder.Configuration.GetValue("RateLimiting:WindowSeconds", 60);
 
@@ -80,6 +135,7 @@ builder.Services.AddRateLimiter(options =>
             return RateLimitPartition.GetNoLimiter("health");
         }
 
+        // UseForwardedHeaders rewrites this before the limiter runs. Otherwise it is the proxy.
         var partitionKey = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
         return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
@@ -120,7 +176,17 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+if (trustPlatformProxy)
+{
+    app.Logger.LogWarning(
+        "Forwarded headers trust the connecting proxy (ForwardedHeaders:TrustPlatformProxy). ForwardLimit is {ForwardLimit}.",
+        forwardLimit);
+}
+
 app.UseMiddleware<TaskFlow.WebApi.Infrastructure.Middleware.ExceptionMiddleware>();
+
+// Must run before UseHttpsRedirection and UseRateLimiter so scheme and client IP are already rewritten.
+app.UseForwardedHeaders();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
