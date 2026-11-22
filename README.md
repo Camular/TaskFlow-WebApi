@@ -17,7 +17,7 @@ This repository contains the **backend** of TaskFlow (polyrepo). The API focuses
 - **Attachments:** Upload, list, download, and delete files on a task (`attachments.create`, `attachments.read`, `attachments.delete`). Files are stored on disk under a local `uploads` folder (gitignored); the database keeps metadata only (`OriginalFileName`, content type, size). List does not expose `StoredFileName`; download returns the file with the original name.
 - **Activity log:** Workspace activity feed (`activitylog.read`). Entries are written internally when a task is created, a comment is added, or a file is uploaded. List is newest first; there is no public create endpoint.
 - **Boards & columns:** Create, list, get, update, and delete boards in a workspace; create, list, update, and delete columns on a board (ordered by `Position`). Board/column names are unique within their parent. Dedicated permissions: `boards.create`, `boards.read`, `boards.update`, `boards.delete`. Owner and Administrator get full board CRUD; Member and Viewer get `boards.read` only. `GET .../boards/{boardId}/view` returns the board with columns and each column’s tasks (kanban-style). Moving a task onto a column (or clearing it) still uses `taskitem.update` (`PATCH .../tasks/{taskId}/column`). Deleting a board cascades columns; deleting a column sets task `ColumnId` to null (`SetNull`).
-- **Cross-cutting:** Global exception middleware (401 / 403 / 404 / 400 / 409), EF Core + PostgreSQL, Docker Compose for local database, health check (`GET /health` with EF DbContext probe), CORS for configured frontend origins (`Cors:AllowedOrigins`)
+- **Cross-cutting:** Global exception middleware (401 / 403 / 404 / 400 / 409), EF Core + PostgreSQL, Docker Compose for local database, health check (`GET /health` with EF DbContext probe), CORS for configured frontend origins (`Cors:AllowedOrigins`), fixed-window rate limiting per client IP (`RateLimiting:PermitLimit` / `WindowSeconds`; `/health` is excluded)
 
 ## Tech stack
 
@@ -122,12 +122,13 @@ Protected endpoints need `Authorization: Bearer <token>`.
 - Custom roles cannot receive owner-only `workspace.delete`
 - CORS policy `Frontend` reads `Cors:AllowedOrigins`; `UseCors` runs before authentication so 401 responses still include `Access-Control-Allow-Origin` for allowed origins
 - `GET /health` checks API liveness and database connectivity via EF Core
+- Rate limiting is a fixed window per remote IP (`UseRateLimiter` after CORS). Over the limit the API returns 429 with `Retry-After` and a JSON message. `/health` is not counted. Behind a reverse proxy, the client IP needs forwarded headers (not configured yet).
 
 ## Status / roadmap
 
-Implemented: auth, workspaces, members, custom roles (create / list / get / update / delete), invitations (create / list / cancel / accept), projects (CRUD + key), task API (detail + unassign), task–project link with number and code, lookup by code, task `CreatedByUserId`, comments (create / list / update / delete), attachments (upload / list / download / delete), activity log (list + auto entries on task/comment/attachment create), boards and columns (CRUD + `boards.*` permissions), board view (columns with tasks), move task to column (`taskitem.update`), health checks, and CORS for local frontend origins.
+Implemented: auth, workspaces, members, custom roles (create / list / get / update / delete), invitations (create / list / cancel / accept), projects (CRUD + key), task API (detail + unassign), task–project link with number and code, lookup by code, task `CreatedByUserId`, comments (create / list / update / delete), attachments (upload / list / download / delete), activity log (list + auto entries on task/comment/attachment create), boards and columns (CRUD + `boards.*` permissions), board view (columns with tasks), move task to column (`taskitem.update`), health checks, CORS for local frontend origins, and per-IP rate limiting.
 
-Next: rate limiting or hosting notes as needed. Outbound invitation email is not implemented.
+Next: forwarded headers and hosting notes (Render / Cloudflare) so rate limiting sees the real client IP. Outbound invitation email is not implemented.
 
 ## Manual API coverage (7 Oct 2026)
 
@@ -151,6 +152,7 @@ Checked over HTTPS against a local API. Re-run this set before a large portfolio
 - Board view (9 Nov 2026): `GET .../boards/{boardId}/view` 200 returns board with columns ordered by position and tasks nested under each column. Tasks without a column are omitted. Unknown board 404. No token 401.
 - Health (11 Nov 2026): `GET /health` returns 200 `Healthy` when PostgreSQL is up; 503 `Unhealthy` when the database is unreachable. No auth required.
 - CORS (11 Nov 2026): OPTIONS preflight with allowed origin `http://localhost:5173` returns 204 and `Access-Control-Allow-Origin`. Disallowed origin gets no CORS allow headers. GET with allowed origin includes `Allow-Origin`. `GET /api/workspaces` without a token returns 401 and still includes `Allow-Origin` for an allowed origin (`UseCors` before auth). `Allow-Methods` echoes the requested method (e.g. DELETE).
+- Rate limiting (22 Nov 2026): with a low Development limit, the first requests to `GET /openapi/v1.json` return 200 and the next return 429 with `Retry-After` and `{"statusCode":429,"message":"Too many requests. Please try again later."}`. `GET /health` still returns 200 `Healthy` after the limit is hit. Default config is 100 requests per 60 seconds per IP.
 
 ## License
 
