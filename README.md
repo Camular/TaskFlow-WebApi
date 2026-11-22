@@ -92,6 +92,10 @@ Do **not** commit real secrets. `appsettings.json` may contain placeholders only
 
 Use the HTTPS URL printed by Kestrel (often `https://localhost:7xxx`). In Development, OpenAPI is available.
 
+### Automated tests
+
+From the repository root, `dotnet test TaskFlow.WebApi/TaskFlow.WebApi.slnx` runs the xUnit project. Each test uses its own in-memory SQLite database, so the local PostgreSQL database is not touched. The suite covers register (personal workspace and Owner), duplicate email and username, a wrong password, Viewer forbidden versus Owner allowed on workspace update, and blocking removal of the last Owner.
+
 ## Example API surface
 
 | Area | Examples |
